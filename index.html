@@ -662,9 +662,8 @@ function buildSub(id) {
   subButtons = Array.from(subMenu.querySelectorAll('button'));
   subButtons.forEach(b => {
     const i = +b.dataset.ep;
-    b.addEventListener('mouseenter', () => pickSub(i));
-    b.addEventListener('focus', () => pickSub(i));
-    b.addEventListener('click', () => { pickSub(i); S.open(list[i]); });
+    // content only changes on a click (or Enter); clicking the item that's already selected opens it
+    b.addEventListener('click', () => { if (subSel === i && b.getAttribute('aria-current')) S.open(list[i]); else pickSub(i); });
   });
 }
 function pickSub(i) {
