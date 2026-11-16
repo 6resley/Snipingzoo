@@ -5,7 +5,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Krona+One&display=swap">
 <style>
 /* Fonts ship next to the page in fonts/ (licensed by Snipingzoo). */
-@font-face{font-family:'Bank Gothic';src:url('fonts/bankgothic-md.woff2') format('woff2');font-weight:400 700;font-display:swap}
+@font-face{font-family:'Bank Gothic';src:url('fonts/bankgothic-md.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'Bank Gothic Bold';src:url('fonts/bankgothic-bold.woff2') format('woff2');font-weight:400;font-display:swap}
 @font-face{font-family:'Conduit ITC';src:url('fonts/conduit-itc.woff2') format('woff2');font-weight:400;font-display:swap;size-adjust:115%;ascent-override:73.5%;descent-override:12%;line-gap-override:0%} /* same vertical metrics on every OS */
 @font-face{font-family:'Conduit ITC';src:url('fonts/conduit-itc-bold.woff2') format('woff2');font-weight:600 700;font-display:swap;size-adjust:115%;ascent-override:73.5%;descent-override:12%;line-gap-override:0%} /* same vertical metrics on every OS */
 /* Layout: a game-lobby frame. Smoky full-screen backdrop, a darker rail on the left with a right-aligned menu,
@@ -150,13 +151,14 @@ html.booting .stage,html.booting .railbg{visibility:hidden}
 .boot-lockup{position:absolute;left:50%;top:calc(50% - 360 * var(--u) + 162 * var(--u));transform:translate(-50%,-50%);opacity:0;transition:opacity 1.4s ease;--cap:calc(34 * var(--u))}
 .boot.in .boot-lockup{opacity:1}
 /* glowing-tube wordmark: pale mint core, soft green bloom */
-.boot-word{position:relative;display:block;font-family:var(--head);font-size:calc(var(--cap) / .516);line-height:1;letter-spacing:.07em;margin-right:-.07em;white-space:nowrap;
-  color:transparent;-webkit-text-stroke:calc(.7 * var(--u)) rgba(90,220,100,.5);paint-order:stroke fill;
-  /* venetian-blind stripes through the letters: bright bands with the green glow showing between them */
-  background:repeating-linear-gradient(180deg,#f6fff2 0 calc(var(--cap) * .075),#c8f7c0 calc(var(--cap) * .085),rgba(110,225,115,.8) calc(var(--cap) * .095) calc(var(--cap) * .11));
-  -webkit-background-clip:text;background-clip:text;
-  filter:drop-shadow(0 0 calc(1.5 * var(--u)) rgba(200,255,190,.9)) drop-shadow(0 0 calc(5 * var(--u)) rgba(90,240,100,.95)) drop-shadow(0 0 calc(12 * var(--u)) rgba(50,210,70,.7))}
-.boot-word::after{content:attr(data-text);position:absolute;inset:0;z-index:-1;color:#5be86c;-webkit-text-stroke:0;text-shadow:none;transform:scaleX(1.06);filter:blur(calc(9 * var(--u)));opacity:.35}
+.boot-word{position:relative;display:block;font-family:'Bank Gothic Bold',var(--head);font-size:calc(var(--cap) / .516);line-height:1;letter-spacing:.07em;margin-right:-.07em;white-space:nowrap;
+  color:#eefde8;-webkit-text-stroke:calc(2.4 * var(--u)) #e2f9da;paint-order:stroke fill;   /* solid pale letters, fattened */
+  /* tight glow, just a few pixels */
+  filter:blur(calc(.35 * var(--u))) drop-shadow(0 0 calc(2 * var(--u)) rgba(150,255,140,.9)) drop-shadow(0 0 calc(6 * var(--u)) rgba(70,225,90,.65)) drop-shadow(0 0 calc(10 * var(--u)) rgba(50,200,70,.3))}
+.boot-word::after{display:none}
+.boot-lockup::after{content:"";position:absolute;left:-4%;right:-4%;top:50%;height:calc(var(--cap) * 2);transform:translateY(-50%);pointer-events:none;
+  background:repeating-linear-gradient(180deg,rgba(20,90,25,.32) 0 calc(.9 * var(--u)),transparent calc(.9 * var(--u)) calc(3.1 * var(--u)));mix-blend-mode:multiply;
+  -webkit-mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 55%,transparent 100%);mask-image:radial-gradient(ellipse 52% 50% at 50% 50%,#000 55%,transparent 100%)}
 .boot-logo{position:absolute;right:calc(var(--cap) * -.35);top:50%;width:calc(var(--cap) * 6.2);height:calc(var(--cap) * 6.2);transform:translateY(-50%);z-index:-1;
   filter:drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55))}
 .boot-band{position:absolute;left:0;right:0;top:calc(50% - 72 * var(--u));height:calc(234 * var(--u));background:rgba(255,255,255,.13);
