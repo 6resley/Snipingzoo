@@ -100,13 +100,12 @@ a{color:inherit}
 .panel .colhead{position:absolute;right:0;font-family:var(--head);top:calc(22 * var(--u));font-size:calc(21 * var(--u));line-height:calc(19 * var(--u));color:rgba(255,255,255,.25)}
 .rows.squad{gap:calc(4 * var(--u))}
 .rows.squad .num{min-width:calc(26 * var(--u))}
-.rows.squad .row{background:none;height:calc(25 * var(--u));font-size:calc(22 * var(--u))}
-.rows.squad .row .nm{color:var(--gold);opacity:.55}
-.rows.squad .row .num{color:#fff;opacity:0}
+.rows.squad .row{background:rgba(40,40,38,.42);height:calc(25 * var(--u));font-size:calc(22 * var(--u));transition:background .1s}
+.rows.squad .row .nm{color:#fff;opacity:1;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rows.squad .row .num{color:#fff;opacity:1;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .rows.squad .rk{width:calc(28 * var(--u));height:calc(28 * var(--u));filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
-.rows.squad .row.on{background:linear-gradient(90deg,rgba(0,0,0,.24),rgba(0,0,0,.3) 60%,rgba(0,0,0,.36))}
-.rows.squad .row.on .nm{opacity:1}
-.rows.squad .row.on .num{opacity:1}
+.rows.squad .row.on{background:rgba(30,30,28,.55)}
+.rows.squad .row.on .nm{color:var(--gold)}
 .panel{position:absolute;scrollbar-width:none;-ms-overflow-style:none}
 .panel::-webkit-scrollbar{display:none;width:0;height:0}
 
@@ -137,10 +136,12 @@ button.row.dl:hover,button.row.dl:focus-visible{background:rgba(160,160,155,.7)}
 .tagform{display:block;margin:0 0 calc(4 * var(--u))}
 .tagform input{width:100%;height:calc(32 * var(--u));background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.4);color:#fff;font:inherit;font-size:calc(20 * var(--u));padding:0 calc(10 * var(--u));text-align:center}
 .tagform input:focus{outline:none;border-color:var(--key)}
-.rows.lobby .row{background:none}
-.rows.lobby .row.me{background:var(--row)}
+.rows.lobby .row{background:rgba(40,40,38,.42)}
+.rows.lobby .row .nm{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rows.lobby .row .nm.gold,.rows.lobby .row:hover .nm{color:var(--gold)}
+.rows.lobby .row.me{background:rgba(30,30,28,.55)}
 .rows.lobby button.row{width:100%;border:0;font:inherit;font-size:calc(21 * var(--u));color:inherit;cursor:pointer;text-align:left}
-.rows.lobby button.row:hover{background:rgba(160,160,155,.7)}
+.rows.lobby .row:hover{background:rgba(30,30,28,.55)}
 .rows.lobby .more{font-size:calc(17 * var(--u));color:var(--text-dim);padding-left:calc(28 * var(--u))}
 
 /* preloader: title screen (logo lockup up top, a light band across the middle, "Press Any Key") */
