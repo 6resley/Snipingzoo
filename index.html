@@ -106,6 +106,8 @@ a{color:inherit}
 .rows.squad .rk{width:calc(28 * var(--u));height:calc(28 * var(--u));filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
 .rows.squad .row.on{background:rgba(20,20,18,.32)}
 .rows.squad .row.on .nm{color:var(--gold)}
+.rows.squad .row.searching{background:none}
+.rows.squad .row.searching .nm{color:var(--gold);opacity:.5}
 .panel{position:absolute;scrollbar-width:none;-ms-overflow-style:none}
 .panel::-webkit-scrollbar{display:none;width:0;height:0}
 
@@ -339,8 +341,9 @@ const CONFIG = {
       { name: 'Zoo Ideas', link: '#' },
       { name: 'Zoo zCTH', link: '#' },
       { name: 'Zoo 6ix', link: '#' },
-      { name: 'Zoo Floter', link: '#' } ] }
-    // Editors and graphic designers: add a group like the ones above when you have some.
+      { name: 'Zoo Floter', link: '#' } ] },
+    { group: 'EDITORS', card: 'EDITORS', players: [] },          // add editors here, e.g. { name: 'Zoo Name', link: '#' }
+    { group: 'GRAPHIC DESIGNERS', card: 'GFX', players: [] }      // add graphic designers here
     // Each player can also take rank: (a number shown by the star), role: 'text', and link: 'their channel URL'.
   ],
 
@@ -631,6 +634,7 @@ function renderSquad(g) {
   setPreview(name, `${n} player${n === 1 ? '' : 's'}`, '', g.thumb, g.card || g.group);
   panel.innerHTML = `<h1 class="two">${esc(g.heading || `${name}: ${n} player${n === 1 ? '' : 's'}..`)}</h1>` +
     `<div class="h2">${esc(CONFIG.rosterSub || '')}</div><span class="colhead">${esc(CONFIG.rosterColumn || '')}</span>` +
+    (n ? '' : `<ul class="rows squad"><li><div class="row searching"><span class="nm">Searching..</span>${starIcon}</div></li></ul>`) +
     `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${starIcon}<span class="num">${esc(p.rank ?? '')}</span></a></li>`).join('')}</ul>`;
   bigCount.textContent = `${n}/${total} PLAYERS`;
   const rows = Array.from(panel.querySelectorAll('.rows.squad .row'));
