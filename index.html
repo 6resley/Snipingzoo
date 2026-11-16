@@ -325,38 +325,39 @@ const CONFIG = {
   rosterTitle: 'ROSTER',
   rosterSub: 'Finding players..',
   rosterColumn: '',
+  // 2026 roster (from the team Google Doc). role: 'Lead' = lead of that division.
+  // open: how many empty slots to show as "Searching.." rows.
   roster: [
     { group: 'OWNERS', card: 'OWNERS', players: [
-      { name: 'Zoo Pres', link: '#' },
-      { name: 'Zoo Mathz', link: '#' } ] },
+      { name: 'Zoo Mathz', link: '#' },
+      { name: 'Zoo Pres', link: '#' } ] },
     { group: 'OVERALL LEADERS', card: 'LEADERS', players: [
       { name: 'Zoo Aohs', link: '#' },
       { name: 'Zoo Talos', link: '#' } ] },
-    { group: 'LEADERS', card: 'LEADERS', players: [
-      { name: 'Zoo Dreamy', link: '#' },
-      { name: 'Zoo Visions', link: '#' },
-      { name: 'Zoo Jawa', link: '#' },
-      { name: 'Zoo Kiyuh', link: '#' } ] },
-    { group: 'TRICKSHOTTERS / SNIPERS', card: 'SNIPERS', sepBefore: true, players: [
-      { name: 'Zoo Krivzey', link: '#' },
+    { group: 'CO-LEADERS', card: 'CO-LEADERS', open: 1, players: [
+      { name: 'Zoo Dreamy', link: '#' } ] },
+    { group: 'SNIPERS', card: 'SNIPERS', sepBefore: true, open: 4, players: [
+      { name: 'Zoo Petroh', role: 'Lead', link: '#' },
+      { name: 'Zoo Krivzey', role: 'Lead', link: '#' },
       { name: 'Zoo Auzy', link: '#' },
-      { name: 'Zoo Supra', link: '#' },
-      { name: 'Zoo Fraxhz', link: '#' },
       { name: 'Zoo Graffix', link: '#' },
-      { name: 'Zoo Vez', link: '#' },
       { name: 'Zoo Revz', link: '#' },
-      { name: 'Zoo Petrohvan', link: '#' },
+      { name: 'Zoo Dyh', link: '#' },
+      { name: 'Zoo CTH', link: '#' },
+      { name: 'Zoo 6IX', link: '#' } ] },
+    { group: 'TRICKSHOTTERS', card: 'TRICKSHOTS', open: 3, players: [
+      { name: 'Zoo Kiyuh', role: 'Lead', link: '#' },
+      { name: 'Zoo Visions', role: 'Lead', link: '#' },
+      { name: 'Zoo Jawa', role: 'Lead', link: '#' },
       { name: 'Zoo Braidz', link: '#' },
-      { name: 'Zoo Dyn', link: '#' },
-      { name: 'Zoo Zysah', link: '#' },
       { name: 'Zoo Luzifer', link: '#' },
-      { name: 'Zoo Ideas', link: '#' },
-      { name: 'Zoo zCTH', link: '#' },
-      { name: 'Zoo 6ix', link: '#' },
-      { name: 'Zoo Floter', link: '#' } ] },
-    { group: 'EDITORS', card: 'EDITORS', players: [] },          // add editors here, e.g. { name: 'Zoo Name', link: '#' }
-    { group: 'GRAPHIC DESIGNERS', card: 'GFX', players: [] }      // add graphic designers here
-    // Each player can also take rank: (a number shown by the star), role: 'text', and link: 'their channel URL'.
+      { name: 'Zoo Floter', link: '#' },
+      { name: 'Zoo Vez', link: '#' },
+      { name: 'Zoo Fraxhz', link: '#' },
+      { name: 'Zoo Zysah', link: '#' },
+      { name: 'Zoo Ideas', link: '#' } ] },
+    { group: 'EDITORS', card: 'EDITORS', open: 2, players: [] },
+    { group: 'GRAPHIC DESIGNERS', card: 'GFX', open: 2, players: [] }
   ],
 
   // Unleash the Beasts tab
@@ -651,8 +652,7 @@ function renderSquad(g) {
   setPreview(name, `${n} player${n === 1 ? '' : 's'}`, '', g.thumb, g.card || g.group);
   panel.innerHTML = `<h1 class="two">${esc(g.heading || `${name}: ${n} player${n === 1 ? '' : 's'}..`)}</h1>` +
     `<div class="h2">${esc(CONFIG.rosterSub || '')}</div><span class="colhead">${esc(CONFIG.rosterColumn || '')}</span>` +
-    (n ? '' : `<ul class="rows squad"><li><div class="row searching"><span class="nm">Searching..</span>${starIcon}</div></li></ul>`) +
-    `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${starIcon}<span class="num">${esc(p.rank ?? '')}</span></a></li>`).join('')}</ul>`;
+    `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${starIcon}<span class="num">${esc(p.rank ?? '')}</span></a></li>`).join('')}${Array.from({ length: g.open ?? (n ? 0 : 1) }, () => `<li><div class="row searching"><span class="nm">Searching..</span>${starIcon}<span class="num"></span></div></li>`).join('')}</ul>`;
   bigCount.textContent = `${n}/${total} PLAYERS`;
   const rows = Array.from(panel.querySelectorAll('.rows.squad .row'));
   rows.forEach(r => { const on = () => rows.forEach(x => x.classList.toggle('on', x === r)); r.addEventListener('mouseenter', on); r.addEventListener('focus', on); });
