@@ -1,0 +1,842 @@
+<title>Snipingzoo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@400;600;700&family=Krona+One&display=swap">
+<style>
+/* Fonts ship next to the page in fonts/ (licensed by Snipingzoo). */
+@font-face{font-family:'Bank Gothic';src:url('fonts/bankgothic-md.woff2') format('woff2');font-weight:400 700;font-display:swap}
+@font-face{font-family:'Conduit ITC';src:url('fonts/conduit-itc.woff2') format('woff2');font-weight:400;font-display:swap;size-adjust:115%;ascent-override:73.5%;descent-override:12%;line-gap-override:0%} /* same vertical metrics on every OS */
+@font-face{font-family:'Conduit ITC';src:url('fonts/conduit-itc-bold.woff2') format('woff2');font-weight:600 700;font-display:swap;size-adjust:115%;ascent-override:73.5%;descent-override:12%;line-gap-override:0%} /* same vertical metrics on every OS */
+/* Layout: a game-lobby frame. Smoky full-screen backdrop, a darker rail on the left with a right-aligned menu,
+   the selected screen's content top-right (party list style), button hints bottom-left.
+   EDIT: colors live in :root, all text/links live in the CONFIG block in the <script> at the bottom. */
+:root{
+  --smoke-top:#6a6a67;
+  --smoke-mid:#4a4a48;
+  --smoke-low:#2b2b2a;
+  --glow:#d9b21c;          /* warm glow bottom-left */
+  --text:#f2f2ee;
+  --text-dim:#c9c9c4;
+  --line:rgba(255,255,255,.38);
+  --gold:#f2c94c;          /* highlighted names */
+  --key:#f6d62b;           /* button hints */
+  --new:#8fdc6a;           /* "new" badges */
+  --row:rgba(120,120,116,.55);
+  --rail:rgba(255,255,255,.04);
+  --font:'Conduit ITC','Titillium Web','Arial Narrow',system-ui,sans-serif;   /* menus, lists, options, prompts */
+  --head:'Bank Gothic','Krona One','Arial Black',sans-serif;                   /* titles, popup headers, counters */
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--smoke-low);color:var(--text);font-family:var(--font);font-size:18px;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+a{color:inherit}
+:focus-visible{outline:none}
+
+.screen{position:relative;height:100%;overflow:hidden;
+  background:radial-gradient(ellipse 90% 70% at 70% 30%,var(--smoke-top),var(--smoke-mid) 55%,var(--smoke-low) 100%)}
+#smoke{position:absolute;inset:0;width:100%;height:100%;display:block}
+.art{position:absolute;inset:0;background-position:center;background-size:cover;background-repeat:no-repeat;pointer-events:none}
+.glow{position:absolute;left:-12%;bottom:-20%;width:80%;height:52%;pointer-events:none;
+  background:radial-gradient(ellipse at 30% 75%,color-mix(in srgb,var(--glow) 85%,transparent),color-mix(in srgb,var(--glow) 30%,transparent) 35%,transparent 70%);
+  filter:blur(8px);mix-blend-mode:screen;opacity:1}
+
+/* Everything below is measured off a 1280×720 frame and scales with the window (1u = 1px at 1280×720). */
+.screen{--u:min(calc(100vw / 1280),calc(100vh / 720))}
+/* the UI lives in a 16:9 stage centred in the window; background layers fill the whole window */
+.stage{position:absolute;left:50%;top:50%;width:calc(1280 * var(--u));height:calc(720 * var(--u));transform:translate(-50%,-50%)}
+.railbg{position:absolute;top:0;bottom:0;left:0;width:calc((100vw - 1280 * var(--u)) / 2 + 420 * var(--u));background:var(--rail);pointer-events:none}
+.rail{position:absolute;top:0;bottom:0;left:0;width:calc(420 * var(--u))}
+.rail > *{position:absolute;right:calc(8 * var(--u))}
+.brand{top:calc(73 * var(--u));transform:translateY(-50%);display:flex;align-items:center;gap:calc(8 * var(--u))}
+.brand img{width:calc(26 * var(--u));height:calc(26 * var(--u));filter:invert(1);display:var(--logo-show,none)}
+.brand span{font-family:var(--font);font-weight:700;font-size:calc(25 * var(--u));line-height:1;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rail nav{top:calc(95 * var(--u));right:0;width:100%}
+.menu{list-style:none;margin:0;padding:0}
+.menu li{position:relative;height:calc(30 * var(--u))}
+.menu li.sep{height:0}
+.menu li.sep::before,.menu li.sep::after{content:"";position:absolute;right:0;width:calc(310 * var(--u));height:1px}
+.menu li.sep::before{top:0;background:linear-gradient(90deg,transparent,rgba(235,234,230,.55) 30%,rgba(235,234,230,.8))}
+.menu li.sep::after{top:1px;background:linear-gradient(90deg,transparent,rgba(235,234,230,.25) 30%,rgba(235,234,230,.45))}
+.menu button{position:relative;display:block;width:100%;height:100%;text-align:right;padding:0 calc(8 * var(--u)) 0 0;
+  font-weight:400;font-size:calc(21 * var(--u));line-height:calc(30 * var(--u));color:var(--text);
+  text-shadow:0 1px 2px rgba(0,0,0,.55)}
+.menu button::before{content:"";position:absolute;inset:calc(2 * var(--u)) 0 calc(2 * var(--u)) 35%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 70%,rgba(255,255,255,.3));opacity:0;transition:opacity .08s}
+.menu button:hover::before,.menu button:focus-visible::before,.menu button[aria-current="page"]::before{opacity:1}
+.badge{position:absolute;left:calc(100% + 35 * var(--u));top:50%;transform:translateY(calc(-50% + 2 * var(--u)));
+  box-sizing:border-box;height:calc(20 * var(--u));min-width:calc(49 * var(--u));padding:0 calc(3 * var(--u));
+  display:flex;align-items:center;justify-content:center;
+  font-size:calc(22 * var(--u));font-weight:600;line-height:1;letter-spacing:0;color:#9ff08f;
+  border:calc(2 * var(--u)) solid #86cc80;border-radius:calc(5 * var(--u));background:rgba(70,120,60,.1);
+  box-shadow:0 0 calc(4 * var(--u)) rgba(134,204,128,.45);
+  text-shadow:none;white-space:nowrap}
+.badge > span{display:block;text-box:trim-both ex alphabetic} /* centres the lowercase letters exactly, on any OS */
+.badge.soon{color:#ffe04a;border-color:#d4b53a;background:rgba(120,100,20,.1);box-shadow:0 0 calc(4 * var(--u)) rgba(212,181,58,.45)}
+.status{top:calc(351 * var(--u));transform:translateY(-50%);margin:0;font-size:calc(21 * var(--u));line-height:1;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.keys{top:calc(605 * var(--u));display:flex;flex-direction:column;align-items:flex-end;font-size:calc(21 * var(--u));line-height:calc(30 * var(--u));text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.keys b{color:var(--key);font-weight:400}
+
+/* sub-screen (Unleash the Beasts): wide title, episode list, preview card, big count */
+.subtitle{top:calc(72 * var(--u));transform:translateY(-50%);margin:0;font-family:var(--head);font-weight:400;font-size:calc(26 * var(--u));line-height:1;letter-spacing:-.046em;color:#d4d4d1;white-space:nowrap;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rail > .preview{right:0;top:calc(368 * var(--u));width:calc(324 * var(--u));height:calc(182 * var(--u));display:block;overflow:hidden;text-decoration:none;background:#2a2a28}
+.preview .pt,.preview .pb{position:absolute;left:0;right:0;height:calc(29 * var(--u));padding-right:calc(8 * var(--u));text-align:right;font-size:calc(21 * var(--u));line-height:calc(29 * var(--u));text-shadow:0 1px 2px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preview .pt{top:0;background:rgba(48,48,46,.92);z-index:2}
+.preview .pb{bottom:0;background:rgba(20,20,18,.55);z-index:2}
+.preview img,.preview .ph{position:absolute;left:0;right:0;top:calc(29 * var(--u));bottom:0;width:100%;height:calc(100% - 29 * var(--u));object-fit:cover}
+.preview .ph{display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:700;font-size:calc(26 * var(--u));color:rgba(255,255,255,.55);letter-spacing:.06em;
+  background:radial-gradient(ellipse at 30% 40%,#7a6a48,#3b3428 55%,#1d1b17)}
+.preview:hover .pt,.preview:focus-visible .pt{color:var(--gold)}
+.bigcount{position:absolute;right:calc(96 * var(--u));top:calc(624 * var(--u));transform:translateY(-50%);font-family:var(--head);font-size:calc(41 * var(--u));line-height:1;letter-spacing:-.045em;color:rgba(255,255,255,.13);white-space:nowrap;pointer-events:none}
+.row .end{font-size:calc(13 * var(--u));min-width:calc(46 * var(--u));text-align:right;font-variant-numeric:tabular-nums}
+.keys button{font:inherit;color:inherit;text-shadow:inherit;cursor:pointer}
+.keys button:hover{color:#fff}
+
+#panel h1.two{margin:0;line-height:calc(22 * var(--u))}
+.panel .h2{font-size:calc(21 * var(--u));line-height:calc(19 * var(--u));color:rgba(255,255,255,.5);margin-bottom:calc(1 * var(--u));text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.panel .colhead{position:absolute;right:0;font-family:var(--head);top:calc(22 * var(--u));font-size:calc(21 * var(--u));line-height:calc(19 * var(--u));color:rgba(255,255,255,.25)}
+.rows.squad{gap:calc(4 * var(--u))}
+.rows.squad .num{min-width:calc(26 * var(--u))}
+.rows.squad .row{background:none;height:calc(25 * var(--u));font-size:calc(22 * var(--u))}
+.rows.squad .row .nm{color:var(--gold);opacity:.55}
+.rows.squad .row .num{color:#fff;opacity:0}
+.rows.squad .rk{width:calc(28 * var(--u));height:calc(28 * var(--u));filter:drop-shadow(0 1px 1px rgba(0,0,0,.6))}
+.rows.squad .row.on{background:linear-gradient(90deg,rgba(0,0,0,.24),rgba(0,0,0,.3) 60%,rgba(0,0,0,.36))}
+.rows.squad .row.on .nm{opacity:1}
+.rows.squad .row.on .num{opacity:1}
+.panel{position:absolute;scrollbar-width:none;-ms-overflow-style:none}
+.panel::-webkit-scrollbar{display:none;width:0;height:0}
+
+/* download popup */
+button.row.dl{width:100%;border:0;cursor:pointer;text-align:left;font:inherit;font-size:calc(21 * var(--u));color:inherit}
+button.row.dl:hover,button.row.dl:focus-visible{background:rgba(160,160,155,.7)}
+.popback{position:absolute;inset:0;z-index:40}
+.popup{position:absolute;left:calc((100% - 1280 * var(--u)) / 2 + 415 * var(--u));top:calc((100% - 720 * var(--u)) / 2 + 318 * var(--u));
+  width:calc(450 * var(--u));min-height:calc(96 * var(--u));padding:0 calc(34 * var(--u)) calc(6 * var(--u)) calc(34 * var(--u));
+  background:#5e5e5c;isolation:isolate;box-shadow:0 calc(6 * var(--u)) calc(20 * var(--u)) rgba(0,0,0,.6),0 calc(26 * var(--u)) calc(64 * var(--u)) calc(10 * var(--u)) rgba(0,0,0,.65)}
+.popsmoke{position:absolute;inset:0;width:100%;height:100%;z-index:-1;display:block;pointer-events:none}
+.poptitle{margin:0;height:calc(30 * var(--u));line-height:calc(30 * var(--u));font-family:var(--head);font-weight:400;font-size:calc(25 * var(--u));letter-spacing:-.042em;text-align:center;text-shadow:0 1px 2px #000}
+.poptext{margin:0 0 calc(6 * var(--u));font-size:calc(17 * var(--u));color:var(--text-dim);text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.pbar{position:relative;height:calc(14 * var(--u));border:1px solid rgba(255,255,255,.45);background:rgba(0,0,0,.45);margin-bottom:calc(8 * var(--u))}
+.pbar i{position:absolute;left:2px;top:2px;bottom:2px;width:0;background:linear-gradient(180deg,#f4f4ef,#b9b9b2);transition:width .18s linear}
+.pstat{margin:0 0 calc(10 * var(--u));font-size:calc(19 * var(--u));text-align:right}
+.pstat b{color:var(--key);font-weight:400}
+.popmenu{margin-top:calc(6 * var(--u))}
+@media (max-width:760px){.popup{left:16px;right:16px;width:auto;top:30%}}
+.popmenu li{height:calc(30 * var(--u))}
+.popmenu button,.popmenu a{position:relative;display:block;width:100%;height:100%;text-align:right;padding:0 calc(8 * var(--u)) 0 0;font-size:calc(21 * var(--u));line-height:calc(30 * var(--u));color:var(--text);text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+.popmenu button::before,.popmenu a::before{content:"";position:absolute;inset:calc(2 * var(--u)) 0 calc(2 * var(--u)) 35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 70%,rgba(255,255,255,.3));opacity:0}
+.popmenu button:hover::before,.popmenu button:focus-visible::before,.popmenu a:hover::before,.popmenu a:focus-visible::before{opacity:1}
+
+/* gamertag popup + live lobby rows */
+.poptext.bad{color:#ffb4a8}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.tagform{display:block;margin:0 0 calc(4 * var(--u))}
+.tagform input{width:100%;height:calc(32 * var(--u));background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.4);color:#fff;font:inherit;font-size:calc(20 * var(--u));padding:0 calc(10 * var(--u));text-align:center}
+.tagform input:focus{outline:none;border-color:var(--key)}
+.rows.lobby .row{background:none}
+.rows.lobby .row.me{background:var(--row)}
+.rows.lobby button.row{width:100%;border:0;font:inherit;font-size:calc(21 * var(--u));color:inherit;cursor:pointer;text-align:left}
+.rows.lobby button.row:hover{background:rgba(160,160,155,.7)}
+.rows.lobby .more{font-size:calc(17 * var(--u));color:var(--text-dim);padding-left:calc(28 * var(--u))}
+
+/* preloader: title screen (logo lockup up top, a light band across the middle, "Press Any Key") */
+html.booting .stage,html.booting .railbg{visibility:hidden}
+.boot{position:fixed;inset:0;z-index:100;--u:min(calc(100vw / 1280),calc(100vh / 720));transition:opacity .7s ease}
+.boot.out{opacity:0;pointer-events:none}
+.boot-stage{position:absolute;inset:0}
+.boot-lockup{position:absolute;left:50%;top:calc(50% - 360 * var(--u) + 162 * var(--u));transform:translate(-50%,-50%);opacity:0;transition:opacity 1.4s ease;--cap:calc(34 * var(--u))}
+.boot.in .boot-lockup{opacity:1}
+/* glowing-tube wordmark: pale mint core, soft green bloom */
+.boot-word{position:relative;display:block;font-family:var(--head);font-size:calc(var(--cap) / .516);line-height:1;letter-spacing:.07em;margin-right:-.07em;white-space:nowrap;
+  color:#e9ffe1;-webkit-text-stroke:calc(1.2 * var(--u)) rgba(80,200,90,.55);paint-order:stroke fill;
+  text-shadow:0 0 calc(2 * var(--u)) rgba(210,255,200,.9),0 0 calc(6 * var(--u)) rgba(90,240,100,.9),0 0 calc(14 * var(--u)) rgba(50,210,70,.75),0 0 calc(28 * var(--u)) rgba(40,190,60,.45)}
+.boot-word::after{content:attr(data-text);position:absolute;inset:0;z-index:-1;color:#5be86c;-webkit-text-stroke:0;text-shadow:none;transform:scaleX(1.06);filter:blur(calc(9 * var(--u)));opacity:.35}
+.boot-logo{position:absolute;right:calc(var(--cap) * -.35);top:50%;width:calc(var(--cap) * 6.2);height:calc(var(--cap) * 6.2);transform:translateY(-50%);z-index:-1;
+  filter:drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55))}
+.boot-band{position:absolute;left:0;right:0;top:calc(50% - 72 * var(--u));height:calc(234 * var(--u));background:rgba(255,255,255,.13);
+  box-shadow:0 calc(3 * var(--u)) 0 rgba(0,0,0,.18),0 calc(10 * var(--u)) calc(24 * var(--u)) rgba(0,0,0,.35);display:grid;place-items:center}
+.boot-press{background:none;border:0;padding:calc(10 * var(--u)) calc(20 * var(--u));font-family:var(--head);font-size:calc(28 * var(--u));letter-spacing:-.04em;color:#fff;cursor:pointer;
+  text-shadow:0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55);animation:bootPulse 2.4s ease-in-out infinite}
+.boot-press:focus-visible{outline:none;text-shadow:0 0 calc(10 * var(--u)) rgba(255,255,255,.7)}
+@keyframes bootPulse{50%{opacity:.45}}
+.boot-load{display:flex;flex-direction:column;align-items:center;gap:calc(8 * var(--u));font-family:var(--font);font-size:calc(19 * var(--u));color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.boot-bar{width:calc(300 * var(--u));height:calc(4 * var(--u));background:rgba(0,0,0,.25)}
+.boot-bar i{display:block;height:100%;width:0;background:#fff;box-shadow:0 0 calc(8 * var(--u)) rgba(255,255,255,.6);transition:width .2s linear}
+@media (max-width:760px){.boot-lockup{--cap:calc(22 * var(--u))}}
+@media (prefers-reduced-motion:reduce){.boot,.boot-lockup,.boot-bar i{transition:none}.boot-press{animation:none}}
+
+/* right content: party line + rows, top right */
+.panel{position:absolute;top:calc(56 * var(--u));right:calc(96 * var(--u));width:calc(377 * var(--u));max-height:calc(330 * var(--u));overflow-y:auto;scrollbar-width:none}
+.panel h1{margin:0 0 calc(17 * var(--u));font-weight:400;font-size:calc(21 * var(--u));line-height:calc(26 * var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.panel p{margin:0 0 calc(10 * var(--u));font-size:calc(17 * var(--u));color:var(--text-dim);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:calc(3 * var(--u))}
+.row{display:flex;align-items:center;gap:calc(10 * var(--u));height:calc(26 * var(--u));padding:0 calc(14 * var(--u)) 0 calc(28 * var(--u));background:var(--row);text-decoration:none;font-size:calc(21 * var(--u));font-weight:400}
+a.row:hover,a.row:focus-visible{background:rgba(160,160,155,.7)}
+.row .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .nm.gold{color:var(--gold)}
+.row .sub{font-size:calc(15 * var(--u));color:var(--text-dim)}
+.row .rk{width:calc(22 * var(--u));height:calc(22 * var(--u));flex:none}
+.row .num{min-width:2ch;text-align:right;font-variant-numeric:tabular-nums}
+.group{margin:calc(10 * var(--u)) 0 calc(3 * var(--u));font-size:calc(14 * var(--u));font-weight:600;letter-spacing:.14em;color:var(--text-dim);text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.swatches{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.swatches button{width:calc(88 * var(--u));padding:4px;background:var(--row);text-align:left;font-size:calc(14 * var(--u))}
+.swatches i{display:block;height:calc(36 * var(--u));margin-bottom:4px}
+.logo-big{width:calc(110 * var(--u));height:calc(110 * var(--u));filter:invert(1);margin:4px 0 12px;display:block}
+form{display:flex;gap:6px;margin-top:6px}
+input{flex:1;min-width:0;height:calc(30 * var(--u));background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--text);font:inherit;font-size:calc(17 * var(--u));padding:0 8px}
+input:focus{border-color:var(--key);outline:none}
+.btn{height:calc(30 * var(--u));padding:0 12px;background:var(--row);font-weight:600;font-size:calc(16 * var(--u))}
+.btn:hover{background:rgba(160,160,155,.75)}
+.ver{position:absolute;right:calc(148 * var(--u));top:calc(677 * var(--u));font-size:calc(12 * var(--u));color:var(--text-dim);letter-spacing:.04em}
+.toast{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);font-size:16px;color:var(--key);text-shadow:0 1px 2px #000;opacity:0;transition:opacity .2s}
+.toast.on{opacity:1}
+
+/* phones / small windows: menu on top, content below, page scrolls */
+@media (max-width:760px){
+  body{overflow:auto}
+  .screen{--u:1px;min-height:100%;height:auto;padding-bottom:40px}
+  #smoke,.glow{position:fixed}
+  .stage{position:static;transform:none;width:auto;height:auto}
+  .railbg{display:none}
+  .rail{position:relative;width:auto;background:var(--rail);padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:flex-end}
+  .rail > *{position:relative;right:auto;top:auto;transform:none}
+  .brand{margin-bottom:8px}
+  .rail nav{width:100%;top:auto;right:auto}
+  .badge{display:none}
+  .status{margin-top:16px}
+  .keys{display:none}
+  .subtitle{white-space:normal;text-align:right;margin-bottom:10px}
+  .rail > .preview{position:relative;width:100%;height:200px;margin-top:16px}
+  .bigcount{display:none}
+  .panel{position:relative;left:auto;right:auto;top:auto;width:auto;max-height:none;padding:22px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));overflow:visible}
+  .ver{position:relative;left:auto;right:auto;top:auto;display:block;text-align:right;padding:20px 16px 0}
+}
+@media (prefers-reduced-motion:reduce){.menu button::before{transition:none}}
+</style>
+
+<div class="boot" id="boot" aria-label="Snipingzoo" hidden>
+  <div class="boot-stage">
+    <div class="boot-lockup" aria-hidden="true"><span class="boot-word" id="bootName"></span><img class="boot-logo" src="sz-lockup-logo.png" alt=""></div>
+    <div class="boot-band">
+      <button type="button" class="boot-press" id="bootPress" hidden>Press Any Key</button>
+      <div class="boot-load" id="bootLoad" role="status"><div class="boot-bar"><i id="bootFill"></i></div><span id="bootText">Loading…</span></div>
+    </div>
+  </div>
+</div>
+<div class="screen">
+  <canvas id="smoke" aria-hidden="true"></canvas>
+  <div class="glow" aria-hidden="true"></div>
+  <div class="art" id="art" aria-hidden="true"></div>
+
+  <div class="railbg" aria-hidden="true"></div>
+  <div class="stage">
+  <aside class="rail">
+    <div class="brand"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUAAAAFACAYAAADNkKWqAAAABHNCSVQICAgIfAhkiAAAG6tJREFUeJzt3Xm8HWV5wPFf9h3CEgx7CJggiICICAgiUqi2KC0oClrEokClikWqxVZFtAp2sRQXFKqiuFYQK2ori1jEDcraIPumAklYQggBsvWP56bc3Jxz7llm5p3l9/18no+SO3fOO+fMee7MvO/7vCBJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJ6tOY1A1Qbc0ANgVmDsUkYBowERg39N/LiHPwqWGxFHgUWAw8XXir1SgmQPVjLLA1sA2wHbA9sCswF5gObDAUEwZ4jeXAk8DjQ/97J7AAuBVYCNwN/A5YOcBrqOFMgOrGpsBuwIuAA4hEtxWwYcI2LQF+D/wWuA64CngA+N+EbVLFmADVyg7AnsAhwEHAbOK2tQoeBe4Bvg/8DLiRuGKU1mMCFMQt7SHAwUTCm89gt69lsoS4ff4+8N/A5WmbI6kMphIJ7yKiw2FNQ2IhcDHwJ8DGA7+LkirlVcBXiQ6E1MkodSwGfgQcDUwZ5E2VVF47AR8jOgxSJ52yxjPAJcChmAylWvhD4MfAs6RPMFWK+4APA8/r+R2XlNQs4GS8xc0qfggc1tMnIKlwmwKnE7MrUieNOsYC4JiuPw1JhZgDfBpYTfok0YRYBJxCzHSRlMjmwPnEw/vUSaGJsRj4IDB+tA9KUna2BD5H+gRgRDwBnEF1ZspIlTQZ+ABRGCD1l95YP24Hjm376Unqy3jgJGAF6b/kxuhxBzGtUNKADgR+Q/ovtdF7XEQ8rpDUo3nAlaT/EhuDx19hR4nUlYnAl0j/pTWyjQeA/ZDU1pHUryrLKmKYznKi3P0youT9sqH/Xk5M02vKGMbPEH/kVBLWA0zveUR1loNSN6QPq4EHgbuIZ5UPAg8RRRce5rlk98zQtquJpDiOOPcmEL3b04h1QzYjiq/OJipObwm8gBjzWJf6hPcS1WeuSdwOYQJM7Z3AOakb0YU1xAyIW4BribLzPydK0i8r4PUnAxsBLwT2JhLjvsSaJDMKeP08fBL4O+KPgxIxAaYxmajS8vLUDelgGXGVchlRSXkBUV25LCYAmxDrlOxPrFWyG3E1WRW3EUVp70/dEKko7yCWe0z9PGpkrACuBz5EJJUqzmwYC+wOnApcQTxnTP2+dhMn5/FmSGVzHum/bCPjWmKGyTY5HncqmwBvBr5O+ZPhRXhHppragSiymfpLtjZ+S8xfnZPjMZfNeODVRKIp63TCB4Ad83oDpBTeQnkqMl9MrAnS9IG5M4jP5Sek/0xGxrNEL7FUeWeR/gv1BHA2McRE69sGOBN4jPSf1fA4I8+DlvI0jug5TfkFWgj8BS792K0ZxPPCm0mf/NbGpbkesZSD55N29bVbgeNyP8p6259YLjN1Alz7eW6e7+FK2diNdGtyLCYGVldx+EpZ7UmM10ydBB+inr30qpGjSfPleAx4XwHH12TzidvRlElwNXFlKpXO8aT5UpxHrAanYuxB+me7VpVRqXyc4r8E1wG7FHFwaulgYhpbqiT4xvwPURrd6RR/8p9YyJFpNOOIZ66pSnkdnv8hSu19gWJP+EtwSEsZTQfOJU0SfEcBxyet50yKO8lXA+8q5rA0gEOJ8mBFJ8HXFnFw0lqforiT+zqiYKqq458pPgkeUciRqfE+SHEndRUKpaq1/YnaiUUmwT0KOTI11qkUcyIvB44p6JiUnylEGa4ik+A+hRxZjVh/rDt/CPw78GhO+19D9Co+Q5Rsuj2n11Hx3gucQlR5yfP7No54Xvx8ouCuJEmSJEnSWnV/BjiHOMY1idshlcX0ofhF6oaUQZ1Lo08jaqlNTt0QqUTuJuavmwCJZQTraiXweOpGSCXxJDGUa3uiipCo9xWgpPBV4ASiWK+GqfMVoNR0vwZeQqyAZ/JrwQQo1c9SIum9lJhPPg7YIGmLSsoEKNXLPxLP+b469N+7AtcClydrkZKYBDxIsXMxDSNVXAa8kOdsBXxtxDY/Qo1hAjSaEI8Db2JdJxHzyltt/17UCCZAo87xNHAW647kOIRYQnO033VNkQYwARp1jStYd53g7YGretzHTqjWTIBG3eI+4ipvrWnA2X3uaxGwCaotE6BRl1hNrEA4fFrncXR3u9spLkO1ZQI06hDfZt0rtf2JOe5Z7d9OkZoyARpVjjuB1/Gccaw/rCWLeIIGL7zlQGipXJYC7wN2INaCXms1Mag5azOIZV5VM14BGlWLC+h8NXZQjq+9VYfXrS2vAKX0bgEOAP4MeLjDdpcBF+bUhk/ktF8l4hWgUfZYARxL767OqS1z+2hLpXkFKKXxaWAW8MU+fvdVxLPCLI0nCqaqJrwCNMoY15PNAuYn5dC2lcDEDNpWGV4BSsX4HfAGYHfgmgz2902yvwocRyzirhrwCtAoS3wZmEn2bsihrYuJ704juCZIb24nquxOS90QVcIYoizV4pz2fyBxLq7KcJ9TMt5fqZkAe7dkKKTUHh0K9ckE2Ju6LySvchhD3I52u22v5+Xw7ccTRRYa+UfdBDi45wGHE+OohhtDbz1qa7fv5mReQ3RgTaK7L8oaYMJQdGPN0L7Hd7H/McQt03R6++LO6GHbMcDUHrYfR3/vTbf7n0RvHYi9nge9tGUMvX2Ph28/EdgQOAf4QA/7qA0T4ODmEWO6pKr5EXAMsHDEv48DziXmIv9H0Y0qkglwcE+nboDUo0VE4vthi58dAHweeD4xP7jWCdBxgIPzuaCq4lngPcBmrJ/8tiTmGV9JJD+I6tNzimpcCiZAqRkuAXYEPtXiZ0cRQ7yOavGzt+bYpuRMgFK93UZcyR0G3DPiZzsDPyeu/Ka2+f1jO/ys8kyAUj2tAk4jrvr+q8XPP0GU4XrZKPvZBtgz26aVhwlQqp9LgI2Bj7f42WuIK8H39bC/t2TRqDIyAUr18QDRi3sYsdbHcDOBzwGX0nvHxisHbVhZmQCl6lsOnEjcrl7V4ud/TkyZO77P/c+lpgsnmQClavsO8ALi6m6k+UQZ/fMYfLjWAQP+finVJQFOJkavS01xE7AfcARwX5ttPkpUj87CQRntp1TqkgCPIf4KSnW3djDzrsTaIJ18MsPXfSk1vMioSwJ8C+sXI5Dq5lvAbFoPZm7lV8BdGb32PGIGSa3UIQFOBfbAumiqrwXAXsCRwGM9/u4/ZdSGyUQ5/1qpQwJ8FfHhSHXzFNFzuzNxNdePi4BlGbVnv4z2Uxp1SIC1fDirxvsKsD1RmWUQDxFrh2Rh14z2Uxp1SICHD/1vtwUkpTL7BfAS4M+I5JWFSzLaz/7UbNnMqifAuUQZH6nqVhBr/e4NXJfxvq/MaD/TgM0z2lcpVL0g6oGpG0AMMF1CjMZXeYwhOgw2ovyzGM4jhrY8mdP+byYWPc/i+34kcFYG+ymFqifA/VM3APgl8VdxdeqG6P+tIr7wexLrXZQ1Ad5I1NvL6hldO88Qtf42ZbAlLycAv8mkRcrEbTy3oPOmI36Wx8Lot+d6NMrKJsB3Sb8gertYRo0rrKgYM4GlmAC1rrOIBJM6ybWLc4BZuR29GuMVrHtiFZEAb8nzgDSQw4Hfkz7BtYtrcLpm6VT5GeBWiV7zs9RsKEDJjAGmECMU3kMktU62JiqhvCbndvVrKXAK8IXUDcnIBOLua1HqhmShyglwjwSvuSFwQoLXbZpvAO+m8zi4mcD76a2ycZFWEUnvL4kOmU62I45jKsV2pk0jkvP9Q/89A9iJeG/nEPUFNwM2IP74b0HcaU0nhp+N9sdJObqK4m+BjXzjJrqbbXAosZh36va2i+vp/nb3Y8Ta0qnauvOwtryph9+b3eXxKScPsO4HYgKsbjwCvJ3R7UTMiU3d3k7HcWQXxwFwHPC7ErR5x2Ft+tMefm+LLo9TOZhGDBod/oGYAKsZXyBuuTqZRDx7XVWC9raLTxK3iqPZl3Il8X4TYIpn8BqyI+t/ICbAasXVwIsZ3Qms/8euTPGfdHe7+3zgByVo78joNwFu18UxKyevZP0PxARYjVgGnMzoXkLMYU3d3nbxCPC2Lo5jCnAGMRsjdZtbRb8JcG4Xx156Ve0F3iZ1A9SXc4je3U49nbOJwcxlnSmxmui4+OAo240jrl7/lcEXJCqjquaOdVT1IMo6t1Ot3Uws2/izUbY7gVjMe7Rngqn8kuisuXmU7fYHPsO6Pax1syZ1A7JQ1QRoCaxqeJwYZ/Zvo2x3INHJMS/3FvXnIaLX9tJRtptPVHZ5ee4tSq8WCyRVtR6gXfDl91mionGn5DeTKNl+OeVNfh8iOjA6Jb9JwJeAW2lG8oPq5o51VPUKcMPUDVBb/wP8BXG72Mn7ieRS1vVcriSOo1P5p7HAqcBpdDcERiVT1QRY1mdETbaMmLs72pzXg4jOkPm5t6g/C4nnfN8bZbvDgH+kJr2hfZiQugFZqGoCnJa6Afp/a4jb3HcSQz3amUvcFh9cRKP68DSR0P52lO32Aj5NmrnoylhVE2Atnj/UwD3E1K9fj7Ld3xDDRsp6u/tz4M3A3R22mUkMz+lmyl4T1KIX2ESifiwCjiau6jolv8OJAcN/TzmT3+1ED/Q+tE9+GwIfIdYXMfk9x1tgNdKFwLuARztssxXwRcq9ZvMniE6YZzts8zrgXBx3WlteAapbvyCee72Z9slvGvApolJPWZPfxcQiVn9D++S3L1Ga67uY/GrNBKjRPEJMX9ubGOLSzjHAnUPbltEdwGuJ+a7tCq1uQ/T+Xg3sUlC7lJC3wOrkG8Sc3E4VjXcnhrXsU0iLereCmLt7eodtZhG3w+8spEUqjaomwG7Kho9n/Qox6s4twLHAtR22mUZ0bryrkBb153vEFem9HbbZjXjOtxr4MeXr3VxDVJQpwxrYtVPVBPhUF9ssI8qr17ESR57GMvpk/7cTVU4m5d+cvtxNlKq6qottbyDG9pXZBsCS1I0YoRaPz6qaAJ9s8W+tEt2CvBvSMC8Evkx3hUxTOYW4Je/Uu1s1G6VuQAsWQ0hocYt/6zQLQYPZlHgeeDPlTX4XElWC/ol6Jb+yWpG6AVmo6hVgqzVJDyLWYO01qa8mJr6PtnRhU/01MT1sRuqGtHE3cUt+ReqGqHqqmgBbrUf6nT739SQx/OGx/ptTSwcRV1NlHQ7yJPBR4MzUDVF11SkB9utxvH0ebjNisv8RqRvSwSXEVV+rOwGpa1V9BvhghvvqZkhNE0wgbnUfprzJ71biGeRhmPyUgapeAT6c4b7GU5MerQEcQNTx2yFxO9pZRTyLrFvvbpXV4pl5VRPgA8Rtaxbj0MZR3SvhQW1HDGvZL3VDOvgiMZh5aeqGqH6q+sVfROuxgP0YT01K+/Too8Q4ybImv1uIjpi3YfIro1o8OqpqAoTO5Zh6MZHyzmjIw+uJYgAfoJw1+pYQ62zsQiyWpHKqxTjAKifArGZ5TKIZc4Z3Bn4CfIvylng6H9gW+IfUDdGoVqVuQBaqnABHm6/arYlEfbi6mkqUcr8FeEXitrRzA7Gc5HGUb86rWqtFAqxqJwjAbRnua7sM91UmbyWS36zE7WhnJXAisZi4qsVb4MTaFbXsR1lvCfu1F3Ad0YNa1uT3L8Qkf5NfNXkFmNgdxF+hLHpwyzr+rVdjiaUn3055y4D9L7Hg+E9TN0QDqcU4wCobT0yJW5NB3FNw2/Pw10SdxCzejzxiEfCm3I6+3rYlv89lx2Gv86dd/s4KYpnQyqvyLfBKsrsNnkV1r4b3JNbqOJOoHFxG5wPzgK+nbogy8QQ1mZFT5QQInRfp6cU0ylv1pJ3NiCEtvyLW5Sij64GdiN5dq+3Ux0Lg6dSNyELVE2CnNSt69fIM95W3U4gV2F6fuiFtLAWOIgoX3Jq4LcreXTgTpBRuyHBff5DhvvKyHzEP+h8ob4HSzwAb4+1unWU1Bje5qifAm8huTvCLiUHRZTSLWKT7p8BWidvSzs+AlxBLS9pDWG9e1ZfILWTXI7ZvwW0fzQRiTdvUPbid4l7idlf5KVMv8GrqM2ys8leAAP+d4b7KtLj3HxFj5k5L3ZAOziNWivta6oaoMEvJtiCxBnQ02f01zHJ6Xb9eCPyA9Fd2neJKYliLilGmK8Dv53aUCdThCnDtLXAW5pG2MMLHiAfMr07Yhk6WEOXyXwncnrgtSuO61A3IUlUH/w63gOgZ3Saj/b0R+OeM9tWtI4mFiDYp+HV78bfA2UQl7g0o71S7qhsLLKO8A42/kboBWapDAlwB3Eh2CfB1FJcA5wAXUN6qzMOdREy3m0B2V9xa31RiCYCzUzekhcXUrAe4DgkQ4rnEoRntay9ilsXCjPbXyhSiA6FKvaezUzegQco6yPjbqRuQtTo8AwT4RYb7mkw848rLm4HfUK3kJwH8OHUDslaXBHgT2a0RAnG7l7WXER0cXyG723WpKIuAy1I3Imt1SYAQRQGysi/ZlfuZStzu/pwY4iJV0eXUcHW+OiXAH2S4rzFEz+wgxhJLOi4B/nzgFklp1bJyd50S4H+SbYmetw3wu/sSg6rPpz4dTWqux6npEqV1SoB3EmXys7IH646S78ZmwDeBq6nRfEk13kWpG5CXOiXA1UTFlKyMo7fb4FOJwgBvyLANUhmcn7oBealTAgT4Tsb7O6GLbQ4D7ieWnyxrSXqpX9cSHXi1VLcEeCPZ9lTNpn2FmFnEtKCLga0zfE2pTL5EjWf+1C0BQnaViO8jFha/ZsS/TwI+TswUGbSnWCqzp4HPp25EnuqYAC8d8PdXAmcA84Evj/jZa4lZHO8f8DWkKvg6Mde+tuo4ROMyYgWyjfr43a8BJxOj3ofbmpjB8YrBmiZVyr+kbkDe6ngF+BTxXK4XPyGWxTyadZPfWGKRn7sw+alZriaeqddaHRMgwFe73O4+ohTVK4nCqsMdBTwCnEiUgJKa5FOpG1CEuibAK4nV69t5Gng7UQH66hE/m0+sM3Ih2c0HlqpkEdkPKSuluiZAgM+2+LdngY8A04i5jcOr7s4CziU6Oaq0SLqUtdNTN6AodU6AF4z4728ALwA+xPoFJ48hZnG8I/9mSaNK9b0cBywHvpjo9QtXx17gtRYA1xNXee8Gftlim42AK4iSVQsobyVeNccUovhACrOJ5PdUotdXxkaboTEGmFhEQ6QBFLUs5puAnXM/GknqwRYUkwAbp863wGXzPOKKdGXqhqhSVgGbpm5EXTUlAe5NzOTIct2QKcSc4K91se1pxKLnkpTETWR/+zDaGqnziM6XvG5fDGPQaPQtcJ2HwYx0BPGBZ2lH4EUt/n0i8DmiLP5LM35NSRlpUgK8Hfhkhvt7EPhj4spyuIOJITXHZ/hakpSJxQx+23BOi/1uQpQPSn1LYxi9RKNvgZvoDfR/stwG7Nlin8cQg1dTn8yG0WuYABvoSno/UT7cYj/bAj/tY1+GUZYwATbQXLo/QX4N7N5iH6cS8yZTn8CGMUiYABvqo3Q+MZ4ATmrxe3sTBVJTn7iGkUWYABtqGvAQrU+KXwFzWvzOWW22N4yqhgmwwf6IdU+Gx4lK0CO9BlhCmhPUMPIME2DD/Q9xInyb9edcTgMuIf1Jahh5RaMTYFPmAndyNDFbY+QSmMcTq2JNKrxFkgoxJnUDSmgHoiikZfHVBC8gloFopCZNhRvNeGIthDsw+UmN4C1weBHxDHBe6oZIKk7TrwCnE8tf3ojJT2qcJifA1xIVYloNe5HUAE1MgNsC/0EMb9k8cVskJdS0Z4DHAZ8BJqRuiKT0mpIAdwS+BeySuiGSyqPut8DTiMR3KyY/qZXJqRuQUt0HQk8gSl89AqxO3BapbMbhd0OSJElSWxOo/2MDVcsYYhlW9aEpvcBZeSNwAVEbMG9jgZXA64HLC3g9ZWMPYnbRlsCqnF9rDLABUbn80zm/lgTA31F8zbbPF3JkGsRY4BMUf268tYBjk9bxrxR/ot8NvKqIg1PP9gEepPhzwmmcSuZLFH/CrwE+C0zJ//DUhemkqxj+mgKOT+roDNKc/M8C7y7g+NTaDODjpPnsHwdenP8hSt1J9UVYQ6xnsn/+h6hhjgQeIM3nvRSYn/8hSr05mnRJcA3wM2C33I+y2Y4i7XrQNwOb5H6UUp9eASwjbSK8Atg17wNtmDcC15L2c72YmLYmldpmwP2k/bKsTYR753ysdTaGuOK7m/Sf5Zk5H6uUqamUZy3hq4nbc3VnA+CDwH2k/+xWAsfke7hSflL1ELeKJcQA7jl5HnCF7Q58hfSf09p4iKhcLlXaq4lSQ6m/UGvjaeC7wB/jnOYpRIXwa4gpa6k/m7XxQ2CjHI9bKtTGwJWk/2KNjGXEVc8fABvmdvTlMpOYW/1NyvWHac1Qe07O79CltE4n/ZesXTwMnEvMLqhbZZEJwCFEgYLFpH+vW8VjxHQ6qdZ2I+1Ysm7iWeAHxNXILsCkXN6J/Ewi1oB5L3Ecz5D+Pe0UF1K/PzpSWxNIUzWk37ifGIf2V8BORC93mYwHtgCOJ+Znl6EHt5tYDhyb/duhXjT9QXhKLyOW6Nw9dUN6tIaYlXADcCcxC+VeYm2JJ4Z+nofxxDO8LYgr032AecT7OD2n18zLVcChxNQ2JWQCTO9jwGmpGzGgVcCjxNXXA8BC4PfEcI77iFJRS4nb0VXEA/+1nRDjiPNwPHErOJ1IcnOG/ncrYDawHbA1UYigyk4EPpe6EVKZzAIuIv1tmZFffIfqJ28pVwcTt5Opv6xGdvEo8BYkde1YYmhK6i+v0X+sAM4e+cFK6s4M4D3Ak6T/Mhu9xU+BHdb/SCX1ajoxbCZ1qS1j9LgHS9VLudgUeB8xnzf1F91YN54iKre4zKyUs4nAOylHrbqmx2PAu7BYqVS4CUStvxtJnwiaFsuBjxCFLiQltiPwBdKsTdukuA+v+KTS2hA4CbiJ9MmiTnE/8DZgWvcfhaSU5hJVqReQPoFUMZ4FLgX26vWNl1QuewJnAbeSPrGUPe4l1gXZvp83WlK57Q58gKjm4pCaiCXAt4EDB3hfJVXMtsARwAU0bw7yEuB7wGHEGEs1kOWwNNw2wMuB1wE7E88RpyRtUbbuAi4Hvk4sGboybXOUmglQ7YwhrhB3Im6bDyES4pYpG9WjhcSt/reAa4kOoRVJW6RSMQGqV5sTxUl3InpI5xIDgrcl3XKOq4lb+N8TA8N/MvS/dyRqjyrCBKisbExUbp5FVHGeT1RE2QLYgBijOJMYS9fPQkvLiJL7i4kpaLcRpflvAn5LjNXz6k49MQGqSFOJ6jZTiXJfU4lnjJOH/v9Eomz+cqIM2Coi8T1JJL2l+NxOkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkiRJkurt/wC6gVtH7HSg6QAAAABJRU5ErkJggg==" alt=""><span id="brandName">SNIPINGZOO</span></div>
+    <nav aria-label="Main menu" id="mainNav"><ul class="menu" id="menu"></ul></nav>
+    <h2 class="subtitle" id="subTitle" hidden></h2>
+    <nav aria-label="Episodes" id="subNav" hidden><ul class="menu" id="subMenu"></ul></nav>
+    <a class="preview" id="preview" hidden></a>
+    <p class="status" id="status"></p>
+    <div class="keys" id="keys"></div>
+  </aside>
+
+  <section class="panel" id="panel" aria-live="polite"></section>
+  <div class="ver" id="ver"></div>
+  <div class="bigcount" id="bigCount" hidden></div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <div class="popback" id="tagPop" hidden>
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="tagTitle">
+      <canvas class="popsmoke" aria-hidden="true"></canvas>
+      <h2 class="poptitle" id="tagTitle">Enter Gamertag</h2>
+      <p class="poptext">Join the lobby. Everyone on the site right now sees you in the party.</p>
+      <form id="tagForm" class="tagform"><label for="tagInput" class="vh">Gamertag</label><input id="tagInput" maxlength="20" autocomplete="nickname" spellcheck="false" placeholder="Your gamertag or alias"></form>
+      <ul class="menu popmenu" id="tagMenu">
+        <li><button type="button" data-tag="join">Join</button></li>
+        <li><button type="button" data-tag="skip">Skip</button></li>
+      </ul>
+    </div>
+  </div>
+  <div class="popback" id="dlPop" hidden>
+    <div class="popup" role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+      <canvas class="popsmoke" id="popSmoke" aria-hidden="true"></canvas>
+      <h2 class="poptitle" id="dlTitle">Download Branding Kit</h2>
+      <p class="poptext" id="dlText"></p>
+      <div class="pbar" id="dlBarWrap" hidden><i id="dlBar"></i></div>
+      <p class="pstat" id="dlStat" hidden></p>
+      <ul class="menu popmenu" id="dlMenu"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIG — change anything in here. Links set to '#' are placeholders.
+   ===================================================================== */
+const CONFIG = {
+  brand: 'SNIPINGZOO',
+  status: 'Est. 2011',
+  version: 'EST. 2011',
+
+  // Background graphic: put an image URL here (or a file name next to this page), e.g. 'background.jpg'.
+  // It sits over the smoke, behind the menu and party list. Leave '' for smoke only.
+  background: '',
+  smoke: true, // set false to turn the drifting smoke off
+
+  // Left menu, top to bottom. 'sep' draws a divider line.
+  // badge: 'new' (green) or 'soon' (yellow), or leave it out.
+  menu: [
+    { id: 'roster', label: 'ROSTER' },
+    { id: 'uploads', label: 'UNLEASH THE BEASTS' },
+    { id: 'feed', label: 'FEED THE BEASTS' },
+    'sep',
+    { id: 'about', label: 'ABOUT', badge: 'new' },
+    { id: 'branding', label: 'BRANDING KIT', badge: 'new' },
+    { id: 'store', label: 'STORE', badge: 'soon' },
+    'sep',
+    { id: 'socials', label: 'SOCIALS' }
+  ],
+
+  // Roster: gold = name shown in gold. rank = the number on the right. link = their channel.
+  // Roster tab: title, the second (dim) header line, and the faint column label on the right.
+  // In the list below, sepBefore: true draws a divider above that squad. card / thumb set the preview card.
+  rosterTitle: 'ROSTER',
+  rosterSub: 'Finding players..',
+  rosterColumn: '',
+  roster: [
+    { group: 'LEADERS', players: [
+      { name: 'Leader_01', role: 'Founder', rank: 70, gold: true, link: '#' },
+      { name: 'Leader_02', role: 'Co-leader', rank: 70, gold: true, link: '#' } ] },
+    { group: 'TRICKSHOTTERS', players: [
+      { name: 'Trickshotter_01', rank: 55, link: '#' },
+      { name: 'Trickshotter_02', rank: 48, link: '#' },
+      { name: 'Trickshotter_03', rank: 41, link: '#' } ] },
+    { group: 'SNIPERS', players: [
+      { name: 'Sniper_01', rank: 62, link: '#' },
+      { name: 'Sniper_02', rank: 37, link: '#' } ] },
+    { group: 'EDITORS', sepBefore: true, players: [ { name: 'Editor_01', rank: 29, link: '#' } ] },
+    { group: 'GRAPHIC DESIGNERS', players: [ { name: 'GFX_01', rank: 29, link: '#' } ] }
+  ],
+
+  // Unleash the Beasts tab
+  uploadsTitle: 'UNLEASH THE BEASTS',
+
+  // Every episode (oldest first). title, year, link (YouTube), thumb (optional thumbnail image URL).
+  uploads: [
+    { title: 'Unleash the Beasts 01', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Unleash the Beasts 02', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Unleash the Beasts 03', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Unleash the Beasts 04', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Unleash the Beasts 05', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Unleash the Beasts 06', year: '[YEAR]', link: '#', thumb: '' }
+  ],
+
+  // The options in the tab's left list. 'sep' draws a divider line.
+  //  show: 'latest'  = newest episode       show: 'archive' = every episode listed on the right
+  //  show: 'link'    = opens link            show: 'text'    = shows text (plus link, if set)
+  //  heading = the line top-right when this option is highlighted ({n} = number of episodes)
+  //  card = big word on the preview card when there's no thumb; caption = text along the bottom of the card
+  uploadsMenu: [
+    { label: 'WATCH LATEST', show: 'latest', heading: 'Newest episode' },
+    { label: 'EPISODE ARCHIVE', show: 'archive', card: 'ARCHIVE', heading: 'Legacy uploads: {n}' },
+    'sep',
+    { label: 'KILLCAM OF THE WEEK', show: 'link', heading: "This week's Killcam", title: 'Killcam of the Week', caption: "This week's pick", card: 'KILLCAM', link: '#', thumb: '' },
+    { label: 'FULL PLAYLIST', show: 'link', heading: 'Full playlist: {n} episodes', title: 'Full playlist on YouTube', caption: 'Every episode in order', card: 'PLAYLIST', link: '#', thumb: '' },
+    { label: 'SUBMIT A CLIP', show: 'text', heading: 'Submit a clip', title: 'Submit a clip', caption: "Next week's Killcam", card: 'CLIPS', text: "Hit something crazy? Send it in for a chance to be on next week's Killcam of the Week.", link: '#' },
+    'sep',
+    { label: 'CREDITS', show: 'text', heading: 'Credits', title: 'Credits', caption: 'Edited by [Editor_01]', card: 'CREDITS', text: 'Edited by [Editor_01]. Graphics by [GFX_01]. Clips from the whole squad.' }
+  ],
+
+  // Feed the Beasts tab (same layout as Feed the Beasts)
+  feedTitle: 'FEED THE BEASTS',
+
+  // Every episode (oldest first). title, year, link (YouTube), thumb (optional thumbnail image URL).
+  feedUploads: [
+    { title: 'Feed the Beasts 01', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Feed the Beasts 02', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Feed the Beasts 03', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Feed the Beasts 04', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Feed the Beasts 05', year: '[YEAR]', link: '#', thumb: '' },
+    { title: 'Feed the Beasts 06', year: '[YEAR]', link: '#', thumb: '' }
+  ],
+
+  // The options in the tab's left list. 'sep' draws a divider line.
+  //  (options work the same as uploadsMenu above)
+  feedMenu: [
+    { label: 'WATCH LATEST', show: 'latest', heading: 'Newest episode' },
+    { label: 'EPISODE ARCHIVE', show: 'archive', card: 'ARCHIVE', heading: 'Legacy uploads: {n}' },
+    'sep',
+    { label: 'CLIP OF THE WEEK', show: 'link', heading: "This week's clip", title: 'Clip of the Week', caption: "This week's pick", card: 'CLIP', link: '#', thumb: '' },
+    { label: 'FULL PLAYLIST', show: 'link', heading: 'Full playlist: {n} episodes', title: 'Full playlist on YouTube', caption: 'Every episode in order', card: 'PLAYLIST', link: '#', thumb: '' },
+    { label: 'SUBMIT A CLIP', show: 'text', heading: 'Submit a clip', title: 'Submit a clip', caption: "Next week's clip", card: 'CLIPS', text: "Hit something crazy? Send it in for a chance to be on next week's Clip of the Week.", link: '#' },
+    'sep',
+    { label: 'CREDITS', show: 'text', heading: 'Credits', title: 'Credits', caption: 'Edited by [Editor_01]', card: 'CREDITS', text: 'Edited by [Editor_01]. Graphics by [GFX_01]. Clips from the whole squad.' }
+  ],
+
+  // About screen: intro text, then the list of what the team does
+  about: 'Snipingzoo is a trickshotting and sniping team, est. 2011. [Write your about text here.]',
+  capabilities: [
+    { name: 'Trickshotting', note: 'Feeds, one-offs, challenges' },
+    { name: 'Sniping', note: 'Quickscopes, competitive' },
+    { name: 'Montage editing', note: 'Teamtages, syncs, color' },
+    { name: 'Thumbnails & GFX', note: 'Thumbnails, channel art' },
+    { name: 'Brand design', note: 'Logos, emblems, playercards' },
+    { name: 'Collabs & sponsors', note: 'Creators, brands, events' }
+  ],
+
+  // Preloader shown when the site opens. oncePerSession: skip it when the visitor comes back in the same visit.
+  // pressStart: wait for "PRESS ANY KEY" (false = go straight in when loading finishes). minSeconds: shortest it shows.
+  preloader: { enabled: true, oncePerSession: true, pressStart: true, minSeconds: 2.2, press: 'Press Any Key', wordmark: 'SNIPING ZOO' },
+
+  // Gamertag filter. 'anywhere' words are blocked even inside a longer tag; 'whole' words only on their own
+  // (so "Assassin" is fine but "ass" isn't). Add your own words to either list.
+  blockedWords: {
+    anywhere: ['fuck','fuk','fck','fack','fvck','phuck','fukk','shit','cunt','bitch','biatch','nigg','niga','nigr','faggot','fagot','retard','whore','slut','dick','pussy',
+      'cocksuck','rape','rapist','nazi','hitler','kike','twat','wank','bastard','porn','penis','vagina','dildo','asshole','arsehole','motherf','jizz','tranny','kys','killyourself'],
+    whole: ['cock','cocks','ass','arse','tit','tits','cum','fag','fags','spic','chink','gook','coon','homo','hoe','hoes','nig','sex','anal','kkk','dyke','negro']
+  },
+  // Normal words that happen to contain a blocked word; these are ignored by the filter.
+  allowedWords: ['scunthorpe','cockpit','peacock','hancock','cocktail','shitake','shiitake','dickens','dickson','assassin','classic','grape','drape','therapist','analyst','bassist','sussex','title','document','cumulative'],
+
+  // Branding kit download: put the link to your kit (e.g. a Google Drive or Dropbox .zip link) in file.
+  brandKit: { file: '#', size: '[size] MB', contents: 'Logos, colors, fonts and overlays' },
+
+  colors: [
+    { name: 'Black', hex: '#000000' }, { name: 'White', hex: '#FFFFFF' },
+    { name: 'Smoke', hex: '#4A4A48' }, { name: 'Gold', hex: '#F2C94C' }
+  ],
+
+  socials: [
+    { name: 'YouTube', handle: '@zoo_sniping', link: 'https://www.youtube.com/@zoo_sniping' },
+    { name: 'TikTok', handle: '@snipinzoo', link: 'https://www.tiktok.com/@snipinzoo' },
+    { name: 'X', handle: '@snipinzoo', link: 'https://x.com/snipinzoo' }
+  ]
+};
+
+/* =====================================================================
+   Screens — what shows on the right for each menu item
+   ===================================================================== */
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const href = u => u && u !== '#' ? `href="${esc(u)}" target="_blank" rel="noopener"` : 'href="#" data-ph';
+const rankIcon = '<svg class="rk" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1d1d1c" stroke="#8a8a85" stroke-width="1.5"/><path d="M7 9l5 3 5-3v2l-5 3-5-3zM7 13l5 3 5-3v2l-5 3-5-3z" fill="#bdbdb6"/></svg>';
+const total = CONFIG.roster.reduce((n, g) => n + g.players.length, 0);
+
+/* ---------- Preloader ---------- */
+let bootDone = false; const bootWaiters = [];
+function afterBoot(fn) { if (bootDone) fn(); else bootWaiters.push(fn); }
+const boot = document.getElementById('boot');
+let bootWaiting = false, bootLeave = () => {};
+function runPreloader(force) {
+  const P = CONFIG.preloader || {};
+  let seen = false; try { seen = P.oncePerSession && sessionStorage.getItem('sz_booted') === '1'; } catch (e) {}
+  const finish = () => { bootDone = true; bootWaiters.splice(0).forEach(f => f()); };
+  if (!force && (!P.enabled || seen)) { finish(); return; }
+  if (!boot.hidden && !boot.classList.contains('out')) return;   // already showing
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.documentElement.classList.add('booting');
+  const bn = document.getElementById('bootName'); bn.textContent = P.wordmark || 'SNIPING ZOO'; bn.dataset.text = bn.textContent;
+  const press = document.getElementById('bootPress'), load = document.getElementById('bootLoad'), fill = document.getElementById('bootFill');
+  press.textContent = P.press || 'Press Any Key';
+  press.hidden = true; load.hidden = false; fill.style.width = '0';
+  boot.classList.remove('out', 'in'); boot.hidden = false; bootWaiting = false;
+  requestAnimationFrame(() => requestAnimationFrame(() => boot.classList.add('in')));
+  const t0 = performance.now(), minMs = reduced ? 200 : (P.minSeconds || 2.2) * 1000;
+  let ready = !!force, shown = 0;
+  if (!ready) {
+    const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    Promise.all([fontsReady, new Promise(r => document.readyState === 'complete' ? r() : addEventListener('load', r, { once: true }))]).then(() => { ready = true; });
+    setTimeout(() => { ready = true; }, 6000);
+  }
+  const tick = () => {
+    const tp = Math.min(1, (performance.now() - t0) / minMs), goal = ready ? tp : Math.min(.9, tp);
+    shown += (goal - shown) * .18 + .002; shown = Math.min(goal, shown);
+    fill.style.width = (shown * 100).toFixed(1) + '%';
+    if (shown >= .999 && ready && tp >= 1) { done(); return; }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  function done() {
+    if (!P.pressStart) { bootLeave(); return; }
+    load.hidden = true; press.hidden = false; bootWaiting = true; press.focus({ preventScroll: true });
+  }
+  bootLeave = () => {
+    if (boot.classList.contains('out')) return;
+    try { sessionStorage.setItem('sz_booted', '1'); } catch (e) {}
+    document.documentElement.classList.remove('booting');
+    boot.classList.add('out'); bootWaiting = false; setTimeout(() => { boot.hidden = true; }, reduced ? 0 : 700);
+    finish();
+  };
+}
+// while the title screen is up, nothing reaches the menu; any key / click / tap continues once loaded
+addEventListener('keydown', e => { if (boot.hidden || boot.classList.contains('out')) return; e.stopImmediatePropagation(); e.preventDefault(); if (bootWaiting) bootLeave(); }, true);
+boot.addEventListener('pointerdown', () => { if (bootWaiting) bootLeave(); });
+document.getElementById('bootPress').addEventListener('click', () => bootLeave());
+runPreloader(false);
+// R on the menu replays the title screen (not while typing or while a popup is open)
+addEventListener('keydown', e => {
+  if (e.key !== 'r' && e.key !== 'R') return;
+  if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input,textarea,[contenteditable]')) return;
+  if (document.querySelector('.popback:not([hidden])')) return;
+  runPreloader(true);
+});
+
+/* live lobby state (used by the home screen) */
+const cleanTag = t => String(t || '').replace(/[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g, '').trim().slice(0, 20);
+// profanity filter: undo common letter swaps, ignore spacing/symbols, catch stretched letters
+const LEET = { '0': 'o', '1': 'i', '!': 'i', '|': 'i', '3': 'e', '4': 'a', '@': 'a', '5': 's', '$': 's', '7': 't', '+': 't', '8': 'b', '9': 'g', '6': 'g', '2': 'z' };
+function tagIsBlocked(tag) {
+  const W = CONFIG.blockedWords || { anywhere: [], whole: [] };
+  const low = String(tag).toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  const swapped = low.replace(/[0-9!|@$+]/g, c => LEET[c] || c);
+  let squashed = swapped.replace(/[^a-z]/g, '');
+  (CONFIG.allowedWords || []).forEach(w => { squashed = squashed.split(w).join('_'); });
+  const collapsed = squashed.replace(/(.)\1+/g, '$1');
+  if (W.anywhere.some(w => squashed.includes(w) || collapsed.includes(w))) return true;
+  const words = swapped.split(/[^a-z]+/).filter(Boolean);
+  const all = new Set([...words, ...words.map(w => w.replace(/(.)\1+/g, '$1')), squashed, collapsed]);
+  return W.whole.some(w => all.has(w));
+}
+let myTag = '', myLvl = 1 + Math.floor(Math.random() * 70), roomApi = null;
+try { myTag = cleanTag(localStorage.getItem('sz_tag')); if (myTag && tagIsBlocked(myTag)) myTag = ''; const l = +localStorage.getItem('sz_lvl'); if (l >= 1 && l <= 70) myLvl = l; } catch (e) {}
+function lobbyList() {
+  const out = [];
+  if (roomApi) {
+    const seen = new Set();
+    roomApi.peers().forEach(p => {
+      if (p.kind !== 'viewer' || seen.has(p.peer)) return;
+      let tag = cleanTag(p.presence && p.presence.tag); if (!tag) return;
+      if (tagIsBlocked(tag)) tag = 'Player';
+      seen.add(p.peer);
+      const lvl = +((p.presence && p.presence.lvl) || 1);
+      out.push({ tag, lvl: lvl >= 1 && lvl <= 70 ? Math.floor(lvl) : 1, me: p.sameTab, since: +(p.presence && p.presence.since) || 0 });
+    });
+  }
+  if (myTag && !out.some(p => p.me)) out.push({ tag: myTag, lvl: myLvl, me: true, since: 0 });
+  out.sort((a, b) => (b.me - a.me) || (a.since - b.since));
+  return out;
+}
+const SCREENS = {
+  home: () => {
+    const list = lobbyList(), shown = list.slice(0, 11), extra = list.length - shown.length;
+    const party = esc(CONFIG.brand.charAt(0) + CONFIG.brand.slice(1).toLowerCase());
+    return `<h1>${list.length} player(s) in ${party}'s party.</h1><ul class="rows lobby">` +
+      shown.map(p => p.me
+        ? `<li><button type="button" class="row me" id="myRow" title="Change gamertag"><span class="nm gold">${esc(p.tag)}</span>${rankIcon}<span class="num">${esc(p.lvl)}</span></button></li>`
+        : `<li><div class="row"><span class="nm">${esc(p.tag)}</span>${rankIcon}<span class="num">${esc(p.lvl)}</span></div></li>`).join('') +
+      (extra > 0 ? `<li class="more">+${extra} more in the lobby</li>` : '') +
+      (!myTag ? `<li><button type="button" class="row" id="myRow"><span class="nm gold">Join the party ▸</span></button></li>` : '') + '</ul>';
+  },
+  roster: () => `<h1>Roster</h1>` +
+    CONFIG.roster.map(g => `<div class="group">${esc(g.group)}</div><ul class="rows">${g.players.map(p =>
+      `<li><a class="row" ${href(p.link)}><span class="nm${p.gold ? ' gold' : ''}">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${rankIcon}<span class="num">${esc(p.rank)}</span></a></li>`).join('')}</ul>`).join(''),
+  about: () => `<h1>About</h1><p>${esc(CONFIG.about)}</p><div class="group">WHAT WE DO</div><ul class="rows">` +
+    CONFIG.capabilities.map(c => `<li><div class="row"><span class="nm">${esc(c.name)}</span><span class="sub">${esc(c.note)}</span></div></li>`).join('') + '</ul>',
+  branding: () => `<h1>Branding kit</h1><img class="logo-big" src="${document.querySelector('.brand img').src}" alt="Snipingzoo logo">
+    <div class="swatches">${CONFIG.colors.map(c => `<button type="button" data-hex="${c.hex}"><i style="background:${c.hex}"></i>${esc(c.name)}<br>${c.hex}</button>`).join('')}</div>
+    <p>Click a color to copy its hex code.</p>
+    <ul class="rows"><li><button type="button" class="row dl" id="dlOpen"><span class="nm gold">DOWNLOAD KIT</span><span class="sub">${esc(CONFIG.brandKit.size)}</span><span class="end">▼</span></button></li></ul>`,
+  store: () => `<h1>Store</h1><p>Merch is coming. The Shopify store opens here when it's live.</p>
+    <form id="notify"><label for="email" class="sub" style="position:absolute;left:-9999px">Email</label><input id="email" type="email" required placeholder="Email for the first drop"><button class="btn" type="submit">NOTIFY</button></form>`,
+  socials: () => `<h1>Socials</h1><ul class="rows">` +
+    CONFIG.socials.map(s => `<li><a class="row" ${href(s.link)}><span class="nm">${esc(s.name)}</span><span class="sub">${esc(s.handle)}</span></a></li>`).join('') + '</ul>'
+};
+
+/* =====================================================================
+   Menu behaviour
+   ===================================================================== */
+// only show a scrollbar on the right panel when the content really doesn't fit
+function fitPanel() { panel.style.overflowY = 'hidden'; requestAnimationFrame(() => { panel.style.overflowY = panel.scrollHeight > panel.clientHeight + 6 ? 'auto' : 'hidden'; }); }
+addEventListener('resize', () => fitPanel());
+const menuEl = document.getElementById('menu'), panel = document.getElementById('panel');
+document.getElementById('brandName').textContent = CONFIG.brand;
+document.getElementById('status').textContent = CONFIG.status;
+document.getElementById('ver').textContent = CONFIG.version;
+menuEl.innerHTML = CONFIG.menu.map(m => m === 'sep' ? '<li class="sep" aria-hidden="true"></li>' :
+  `<li><button type="button" data-id="${m.id}">${esc(m.label)}${m.badge ? `<span class="badge ${m.badge}"><span>${m.badge}</span></span>` : ''}</button></li>`).join('');
+const buttons = Array.from(menuEl.querySelectorAll('button'));
+const first = 'home';
+
+/* ---------- Unleash the Beasts sub-screen ---------- */
+const EPS = CONFIG.uploads.filter(e => e !== 'sep');
+const subTitle = document.getElementById('subTitle'), subNav = document.getElementById('subNav'), subMenu = document.getElementById('subMenu');
+const mainNav = document.getElementById('mainNav'), brandEl = document.querySelector('.brand'), statusEl = document.getElementById('status');
+const preview = document.getElementById('preview'), bigCount = document.getElementById('bigCount'), keysEl = document.getElementById('keys');
+const pad2 = n => String(n).padStart(2, '0');
+const titleCase = t => t.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+const starIcon = '<svg class="rk" viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff6c4"/><stop offset=".45" stop-color="#e3bf4e"/><stop offset="1" stop-color="#8a6a1c"/></linearGradient></defs>' +
+  '<path d="M12 1.2l3.2 6.7 7.3.9-5.4 5 1.4 7.2L12 17.5l-6.5 3.5 1.4-7.2-5.4-5 7.3-.9z" fill="url(#sg)" stroke="#4d3b0e" stroke-width=".7"/>' +
+  '<path d="M12 1.2V17.5M12 9.6l10.5-.8M12 9.6L1.5 8.8M12 9.6l6.5 11.4M12 9.6L5.5 21" stroke="#fff" stroke-width=".35" opacity=".45"/></svg>';
+let sub = null, subSel = 0;   // which sub-screen is open, and which item is highlighted
+
+function setPreview(title, caption, link, thumb, card) {
+  preview.setAttribute('aria-label', title);
+  preview.removeAttribute('target'); preview.removeAttribute('data-ph'); preview.removeAttribute('href');
+  if (link && link !== '#') { preview.href = link; preview.target = '_blank'; preview.rel = 'noopener'; }
+  else if (link === '#') { preview.href = '#'; preview.setAttribute('data-ph', ''); }
+  preview.innerHTML = `<span class="pt">${esc(title)}</span>` +
+    (thumb ? `<img src="${esc(thumb)}" alt="" onerror="this.outerHTML='<span class=&quot;ph&quot;>${esc(card)}</span>'">` : `<span class="ph">${esc(card)}</span>`) +
+    `<span class="pb">${esc(caption)}</span>`;
+}
+
+/* --- Unleash the Beasts options --- */
+const epRow = (e, n, gold) => `<li><a class="row" ${href(e.link)}><span class="nm${gold ? ' gold' : ''}">${esc(e.title)}</span>${rankIcon}<span class="num">${n}</span><span class="end">▶</span></a></li>`;
+function makeSeries(EPS, abbr) {
+  return function (o) {
+  const latest = EPS[EPS.length - 1];
+  let title = o.title || o.label, caption = o.caption || '', link = o.link, thumb = o.thumb, card = o.card || abbr;
+  if (o.show === 'latest' && latest) { title = latest.title; caption = (o.caption || 'Newest episode') + ' · ' + latest.year; link = latest.link; thumb = latest.thumb; card = abbr + ' ' + pad2(EPS.length); }
+  if (o.show === 'archive') { title = o.title || 'Episode archive'; caption = o.caption || `${EPS.length} episodes`; link = ''; }
+  setPreview(title, caption, link, thumb, card);
+  let body = '';
+  if (o.show === 'latest' && latest) body = `<ul class="rows">${epRow(latest, EPS.length, true)}</ul>`;
+  else if (o.show === 'archive') body = `<ul class="rows">${EPS.slice().reverse().map((e, k) => epRow(e, EPS.length - k, k === 0)).join('')}</ul>`;
+  else if (o.show === 'text') body = `<p>${esc(o.text || '')}</p>` + (o.link ? `<ul class="rows"><li><a class="row" ${href(o.link)}><span class="nm gold">${esc(o.title || o.label)}</span><span class="end">▶</span></a></li></ul>` : '');
+  else body = `<ul class="rows"><li><a class="row" ${href(o.link)}><span class="nm gold">${esc(o.title || o.label)}</span><span class="end">▶</span></a></li></ul>`;
+  const heading = (o.heading || 'Legacy uploads: {n}').replace(/\{n\}/g, EPS.length);
+  panel.innerHTML = `<h1>${esc(heading)}</h1>` + body;
+  bigCount.textContent = `${EPS.length} EPISODES`;
+  };
+}
+const seriesOpen = o => { if (o.show === 'link' || o.show === 'latest') preview.click(); else { const r = panel.querySelector('a.row'); if (r) r.focus(); } };
+
+/* --- Roster squads --- */
+function renderSquad(g) {
+  const n = g.players.length, name = titleCase(g.group);
+  setPreview(name, `${n} player${n === 1 ? '' : 's'}`, '', g.thumb, g.card || g.group);
+  panel.innerHTML = `<h1 class="two">${esc(g.heading || `${name}: ${n} player${n === 1 ? '' : 's'}..`)}</h1>` +
+    `<div class="h2">${esc(CONFIG.rosterSub || '')}</div><span class="colhead">${esc(CONFIG.rosterColumn || '')}</span>` +
+    `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${starIcon}<span class="num">${esc(p.rank)}</span></a></li>`).join('')}</ul>`;
+  bigCount.textContent = `${n}/${total} PLAYERS`;
+  const rows = Array.from(panel.querySelectorAll('.rows.squad .row'));
+  rows.forEach(r => { const on = () => rows.forEach(x => x.classList.toggle('on', x === r)); r.addEventListener('mouseenter', on); r.addEventListener('focus', on); });
+}
+
+const SUBS = {
+  uploads: { title: CONFIG.uploadsTitle, top: 95, items: CONFIG.uploadsMenu, label: o => o.label, render: makeSeries(CONFIG.uploads.filter(e => e !== 'sep'), 'UTB'), open: seriesOpen },
+  feed: { title: CONFIG.feedTitle, top: 95, items: CONFIG.feedMenu, label: o => o.label, render: makeSeries(CONFIG.feedUploads.filter(e => e !== 'sep'), 'FTB'), open: seriesOpen },
+  roster: { title: CONFIG.rosterTitle || 'ROSTER', top: 125, items: CONFIG.roster.flatMap((g, i) => g.sepBefore || i === 0 ? ['sep', g] : [g]),
+    label: g => g.group, render: renderSquad, open: () => { const r = panel.querySelector('a.row'); if (r) r.focus(); } }
+};
+let subButtons = [];
+function buildSub(id) {
+  const S = SUBS[id]; let k = 0;
+  subTitle.textContent = titleCase(S.title);
+  subNav.style.top = `calc(${S.top} * var(--u))`;
+  subMenu.innerHTML = S.items.map(o => o === 'sep' ? '<li class="sep" aria-hidden="true"></li>' : `<li><button type="button" data-ep="${k++}">${esc(S.label(o))}</button></li>`).join('');
+  const list = S.items.filter(o => o !== 'sep');
+  subButtons = Array.from(subMenu.querySelectorAll('button'));
+  subButtons.forEach(b => {
+    const i = +b.dataset.ep;
+    b.addEventListener('mouseenter', () => pickSub(i));
+    b.addEventListener('focus', () => pickSub(i));
+    b.addEventListener('click', () => { pickSub(i); S.open(list[i]); });
+  });
+}
+function pickSub(i) {
+  const S = SUBS[sub], list = S.items.filter(o => o !== 'sep');
+  subSel = Math.min(i, list.length - 1);
+  subButtons.forEach((b, j) => { if (j === subSel) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
+  S.render(list[subSel]); fitPanel();
+}
+function setKeys() {
+  keysEl.innerHTML = sub
+    ? '<span>SELECT - <b>ENTER</b></span><button type="button" id="kBack">BACK - <b>ESC</b></button>'
+    : '<span>SELECT - <b>ENTER</b></span><span>BACK - <b>ESC</b></span>';
+  const kb = document.getElementById('kBack'); if (kb) kb.addEventListener('click', () => show(first));
+}
+function setSub(id) {
+  sub = id || null;
+  [brandEl, mainNav, statusEl].forEach(el => el.hidden = !!sub);
+  [subTitle, subNav, preview, bigCount].forEach(el => el.hidden = !sub);
+  if (sub) { buildSub(sub); subSel = 0; }
+  setKeys();
+}
+
+let currentId = first;
+function show(id) {
+  if (!SCREENS[id] && !SUBS[id]) id = first;
+  currentId = id;
+  if (SUBS[id]) {
+    if (sub !== id) setSub(id);
+    pickSub(subSel);
+    buttons.forEach(b => b.removeAttribute('aria-current'));
+    if (location.hash.slice(1) !== id) try { history.replaceState(null, '', '#' + id); } catch (er) {}
+    return;
+  }
+  if (sub) setSub(null);
+  if (id === first) { panel.innerHTML = SCREENS.home(); buttons.forEach(b => b.removeAttribute('aria-current')); if (location.hash) try { history.replaceState(null, '', location.pathname + location.search); } catch (er) {} fitPanel(); return; }
+  panel.innerHTML = SCREENS[id]();
+  buttons.forEach(b => { if (b.dataset.id === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  if (location.hash.slice(1) !== id) try { history.replaceState(null, '', '#' + id); } catch (er) {}
+  fitPanel();
+}
+buttons.forEach(b => b.addEventListener('click', () => show(b.dataset.id)));
+addEventListener('hashchange', () => show(location.hash.slice(1)));
+setKeys();
+show(location.hash.slice(1) || first);
+if (CONFIG.background) document.getElementById('art').style.backgroundImage = `url("${CONFIG.background}")`;
+if (!CONFIG.smoke) document.getElementById('smoke').style.display = 'none';
+
+// keyboard: arrows move, Enter selects, Esc goes back to the first screen
+addEventListener('keydown', e => {
+  if (e.target.matches('input')) return;
+  const list = sub ? subButtons : buttons;
+  const i = list.indexOf(document.activeElement);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    const n = i < 0 ? (sub ? subSel : 0) : (i + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length;
+    list[n].focus();
+  } else if (e.key === 'Escape') {
+    const wasSub = sub; show(first);
+    const back = wasSub ? buttons.find(b => b.dataset.id === wasSub) : buttons[0]; if (back) back.focus();
+  }
+});
+
+/* ---------- Branding kit download popup ---------- */
+const dlPop = document.getElementById('dlPop'), dlText = document.getElementById('dlText'), dlMenu = document.getElementById('dlMenu');
+const dlBarWrap = document.getElementById('dlBarWrap'), dlBar = document.getElementById('dlBar'), dlStat = document.getElementById('dlStat');
+let dlTimer = null, dlReturn = null;
+function dlOptions(items) {
+  dlMenu.innerHTML = items.map(it => it.href ? `<li><a ${href(it.href)} data-act="${it.act}">${it.label}</a></li>` : `<li><button type="button" data-act="${it.act}">${it.label}</button></li>`).join('');
+  const f = dlMenu.querySelector('a,button'); if (f) f.focus();
+}
+function dlOpen() {
+  dlReturn = document.activeElement; dlPop.hidden = false; requestAnimationFrame(() => { if (typeof drawPopSmoke === 'function') drawPopSmoke(); });
+  dlText.textContent = `${CONFIG.brandKit.contents}. ZIP · ${CONFIG.brandKit.size}`;
+  dlBarWrap.hidden = true; dlStat.hidden = true; dlBar.style.width = '0';
+  dlOptions([{ label: 'Download', act: 'go' }, { label: 'Cancel', act: 'close' }]);
+}
+function dlClose() { clearInterval(dlTimer); dlPop.hidden = true; if (dlReturn && dlReturn.focus) dlReturn.focus(); }
+function dlStart() {
+  dlBarWrap.hidden = false; dlStat.hidden = false; let p = 0;
+  dlOptions([{ label: 'Cancel', act: 'close' }]);
+  const tick = () => {
+    p = Math.min(100, p + 3 + Math.random() * 9);
+    dlBar.style.width = `calc(${p}% - 4px)`;
+    dlStat.innerHTML = `Downloading branding kit… <b>${Math.floor(p)}%</b>`;
+    if (p >= 100) {
+      clearInterval(dlTimer);
+      dlStat.innerHTML = 'Download complete.';
+      const ok = CONFIG.brandKit.file && CONFIG.brandKit.file !== '#';
+      dlOptions(ok ? [{ label: 'Open branding kit', act: 'done', href: CONFIG.brandKit.file }, { label: 'Close', act: 'close' }]
+                   : [{ label: 'Close', act: 'close' }]);
+      if (!ok) dlStat.innerHTML = 'Download complete. <b>(Kit link not set yet)</b>';
+    }
+  };
+  dlTimer = setInterval(tick, reduceMotion ? 20 : 140); tick();
+}
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+document.addEventListener('click', e => {
+  if (e.target.closest('#dlOpen')) { dlOpen(); return; }
+  const act = e.target.closest('#dlMenu [data-act]'); if (!act) return;
+  if (act.dataset.act === 'go') dlStart();
+  else if (act.dataset.act === 'close') dlClose();
+  else if (act.dataset.act === 'done') setTimeout(dlClose, 50);
+});
+// while the popup is open: Esc closes it, arrows move within it, nothing reaches the menu behind
+addEventListener('keydown', e => {
+  if (dlPop.hidden) return;
+  e.stopImmediatePropagation();
+  const items = Array.from(dlMenu.querySelectorAll('a,button')), i = items.indexOf(document.activeElement);
+  if (e.key === 'Escape') { e.preventDefault(); dlClose(); }
+  else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus(); }
+  else if (e.key === 'Tab') { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+}, true);
+
+/* ---------- Live lobby: everyone on the site right now, by gamertag ----------
+   Uses the page's "room" (who has it open now; nothing is saved). Your tag and a random level
+   are kept in this browser only, so you don't have to type it again. */
+function refreshHome() { if (currentId === first && !sub) { panel.innerHTML = SCREENS.home(); fitPanel(); } }
+function announce() { if (roomApi && myTag) roomApi.presence({ tag: myTag, lvl: myLvl, since: Date.now() }).catch(() => {}); }
+(async () => {
+  try { if (window.claude && window.claude.use) roomApi = await window.claude.use('room'); } catch (e) { roomApi = null; }
+  if (!roomApi) return;
+  roomApi.onPeers(() => refreshHome(), () => { roomApi = null; refreshHome(); });
+  announce(); refreshHome();
+})();
+
+const tagPop = document.getElementById('tagPop'), tagInput = document.getElementById('tagInput');
+let tagReturn = null;
+function openTag() {
+  tagReturn = document.activeElement; tagPop.hidden = false; tagInput.value = myTag;
+  const note = tagPop.querySelector('.poptext'); if (!note.dataset.base) note.dataset.base = note.textContent; note.textContent = note.dataset.base; note.classList.remove('bad');
+  requestAnimationFrame(() => { if (typeof drawPopSmoke === 'function') drawPopSmoke(); tagInput.focus(); tagInput.select(); });
+}
+function closeTag() { tagPop.hidden = true; if (tagReturn && tagReturn.focus && document.contains(tagReturn)) tagReturn.focus(); }
+function joinTag() {
+  const t = cleanTag(tagInput.value); if (!t) { tagInput.focus(); return; }
+  const note = tagPop.querySelector('.poptext');
+  if (tagIsBlocked(t)) { note.textContent = "That gamertag isn't allowed. Try another."; note.classList.add('bad'); tagInput.focus(); tagInput.select(); return; }
+  note.textContent = note.dataset.base || note.textContent; note.classList.remove('bad');
+  myTag = t; try { localStorage.setItem('sz_tag', myTag); localStorage.setItem('sz_lvl', String(myLvl)); } catch (e) {}
+  announce(); closeTag(); refreshHome();
+}
+document.getElementById('tagForm').addEventListener('submit', e => { e.preventDefault(); joinTag(); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#myRow')) { openTag(); return; }
+  const b = e.target.closest('#tagMenu [data-tag]'); if (!b) return;
+  if (b.dataset.tag === 'join') joinTag(); else { try { localStorage.setItem('sz_tag_skip', '1'); } catch (er) {} closeTag(); }
+});
+addEventListener('keydown', e => {
+  if (tagPop.hidden) return;
+  e.stopImmediatePropagation();
+  const items = [tagInput, ...tagPop.querySelectorAll('#tagMenu button')], i = items.indexOf(document.activeElement);
+  if (e.key === 'Escape') { e.preventDefault(); closeTag(); }
+  else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') ) { e.preventDefault(); items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus(); }
+  else if (e.key === 'Tab') { e.preventDefault(); items[(i + (e.shiftKey ? -1 : 1) + items.length) % items.length].focus(); }
+}, true);
+// first visit: ask once (skipping is remembered too)
+let askedBefore = false; try { askedBefore = !!localStorage.getItem('sz_tag_skip'); } catch (e) {}
+if (!myTag && !askedBefore) afterBoot(() => setTimeout(openTag, 500));
+
+let tt;
+function toast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 1800); }
+document.addEventListener('click', e => {
+  if (e.target.closest('a[data-ph]')) { e.preventDefault(); toast('Link not set yet'); }
+  const sw = e.target.closest('[data-hex]');
+  if (sw) { try { navigator.clipboard.writeText(sw.dataset.hex).then(() => toast('Copied ' + sw.dataset.hex), () => toast(sw.dataset.hex)); } catch (er) { toast(sw.dataset.hex); } }
+});
+document.addEventListener('submit', e => { if (e.target.id === 'notify') { e.preventDefault(); toast('Demo form: not connected yet'); } });
+
+
+/* =====================================================================
+   Drifting smoke
+   ===================================================================== */
+const cv = document.getElementById('smoke'), cx = cv.getContext('2d');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W, H;
+function size() { const s = .5; W = cv.width = Math.round(innerWidth * s); H = cv.height = Math.round(innerHeight * s); }
+size(); addEventListener('resize', size);
+const puffs = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), r: .12 + Math.random() * .3, vx: .00004 + Math.random() * .00012, vy: (Math.random() - .5) * .00004, a: .08 + Math.random() * .14, l: Math.random() < .6 ? 225 : 30 }));
+function draw() {
+  cx.clearRect(0, 0, W, H);
+  for (const p of puffs) {
+    p.x += p.vx; p.y += p.vy; if (p.x - p.r > 1.1) p.x = -p.r; if (p.y < -.3) p.y = 1.3; if (p.y > 1.3) p.y = -.3;
+    const R = p.r * Math.max(W, H), g = cx.createRadialGradient(p.x * W, p.y * H, 0, p.x * W, p.y * H, R);
+    g.addColorStop(0, `rgba(${p.l},${p.l},${p.l - 4},${p.a})`); g.addColorStop(1, `rgba(${p.l},${p.l},${p.l - 4},0)`);
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  }
+  drawPopSmoke();
+  if (!reduce) requestAnimationFrame(draw);
+}
+function drawPopSmoke() { document.querySelectorAll('.popback:not([hidden]) .popsmoke').forEach(drawOnePop); }
+function drawOnePop(pc) {
+  const r = pc.getBoundingClientRect(); if (!r.width) return;
+  if (pc.width !== Math.round(r.width) || pc.height !== Math.round(r.height)) { pc.width = Math.round(r.width); pc.height = Math.round(r.height); }
+  const c = pc.getContext('2d');
+  c.fillStyle = '#7a7a76'; c.fillRect(0, 0, pc.width, pc.height);
+  // the same drifting puffs as the background, drawn stronger so the smoke reads clearly inside the box
+  const big = Math.max(innerWidth, innerHeight);
+  for (const p of puffs) {
+    const x = p.x * innerWidth - r.left, y = p.y * innerHeight - r.top, R = p.r * big;
+    if (x + R < 0 || y + R < 0 || x - R > pc.width || y - R > pc.height) continue;
+    const g = c.createRadialGradient(x, y, 0, x, y, R), a = Math.min(.3, p.a * (p.l > 100 ? 1.8 : 1.6));
+    g.addColorStop(0, `rgba(${p.l},${p.l},${p.l - 4},${a})`); g.addColorStop(1, `rgba(${p.l},${p.l},${p.l - 4},0)`);
+    c.fillStyle = g; c.fillRect(0, 0, pc.width, pc.height);
+  }
+}
+draw();
+</script>
