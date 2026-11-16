@@ -574,7 +574,12 @@ const SCREENS = {
    Menu behaviour
    ===================================================================== */
 // only show a scrollbar on the right panel when the content really doesn't fit
-function fitPanel() { panel.style.overflowY = 'hidden'; requestAnimationFrame(() => { panel.style.overflowY = panel.scrollHeight > panel.clientHeight + 6 ? 'auto' : 'hidden'; }); }
+function fitHeads() {   // shrink a heading that's too long for the panel instead of cutting it off with "…"
+  panel.querySelectorAll('h1').forEach(h => { h.style.fontSize = ''; h.style.textOverflow = 'clip';
+    let fs = parseFloat(getComputedStyle(h).fontSize), n = 0;
+    while (h.scrollWidth > h.clientWidth + 1 && n++ < 20) { fs *= .95; h.style.fontSize = fs + 'px'; } });
+}
+function fitPanel() { fitHeads(); panel.style.overflowY = 'hidden'; requestAnimationFrame(() => { panel.style.overflowY = panel.scrollHeight > panel.clientHeight + 6 ? 'auto' : 'hidden'; }); }
 addEventListener('resize', () => fitPanel());
 const menuEl = document.getElementById('menu'), panel = document.getElementById('panel');
 document.getElementById('brandName').textContent = CONFIG.brand;
