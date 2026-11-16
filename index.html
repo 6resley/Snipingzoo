@@ -100,6 +100,9 @@ a{color:inherit}
 .panel .h2{font-size:calc(21 * var(--u));line-height:calc(19 * var(--u));color:rgba(255,255,255,.5);margin-bottom:calc(9 * var(--u));text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .panel .colhead{position:absolute;right:0;font-family:var(--head);top:calc(22 * var(--u));font-size:calc(21 * var(--u));line-height:calc(19 * var(--u));color:rgba(255,255,255,.25)}
 .rows.squad{gap:calc(4 * var(--u))}
+/* roster: the two header lines stay put, only the player list scrolls */
+.rows.squad:not(:empty){max-height:calc(470 * var(--u));overflow-y:auto;scrollbar-width:none}
+.rows.squad::-webkit-scrollbar{display:none}
 .rows.squad .num{min-width:calc(26 * var(--u))}
 .rows.squad .row{background:rgba(20,20,18,.2);height:calc(25 * var(--u));font-size:calc(22 * var(--u));transition:background .1s}
 .rows.squad .row .nm{color:#fff;opacity:1;text-shadow:0 1px 2px rgba(0,0,0,.6)}
@@ -177,7 +180,7 @@ html.booting .stage,html.booting .railbg{visibility:hidden}
 @media (prefers-reduced-motion:reduce){.boot,.boot-lockup,.boot-bar i{transition:none}.boot-press{animation:none}}
 
 /* right content: party line + rows, top right */
-.panel{position:absolute;top:calc(56 * var(--u));right:calc(96 * var(--u));width:calc(377 * var(--u));max-height:calc(330 * var(--u));overflow-y:auto;scrollbar-width:none}
+.panel{position:absolute;top:calc(56 * var(--u));right:calc(96 * var(--u));width:calc(377 * var(--u));max-height:calc(545 * var(--u));overflow-y:auto;scrollbar-width:none}
 .panel h1{padding-bottom:calc(5 * var(--u));margin:0 0 calc(12 * var(--u));font-weight:400;font-size:calc(21 * var(--u));line-height:calc(26 * var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .panel p{margin:0 0 calc(10 * var(--u));font-size:calc(17 * var(--u));color:var(--text-dim);text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:calc(3 * var(--u))}
@@ -225,6 +228,7 @@ input:focus{border-color:var(--key);outline:none}
   .panel{position:relative;left:auto;right:auto;top:auto;width:auto;max-height:none;padding:22px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));overflow:visible}
   .ver{position:relative;left:auto;right:auto;top:auto;display:block;text-align:right;padding:20px 16px 0}
   .row,.rows.squad .row{height:36px;font-size:18px}
+  .rows.squad:not(:empty){max-height:none;overflow:visible}
   .rows{gap:5px}
   .panel h1{font-size:19px;white-space:normal}
   .subtitle{font-size:22px}
