@@ -162,10 +162,10 @@ html.booting .stage,html.booting .railbg{visibility:hidden}
   filter:drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55))}
 .boot-band{position:absolute;left:0;right:0;top:calc(50% - 72 * var(--u));height:calc(234 * var(--u));background:rgba(255,255,255,.13);
   box-shadow:0 calc(3 * var(--u)) 0 rgba(0,0,0,.18),0 calc(10 * var(--u)) calc(24 * var(--u)) rgba(0,0,0,.35);display:grid;place-items:center}
-.boot-press{background:none;border:0;padding:calc(10 * var(--u)) calc(20 * var(--u));font-family:var(--head);font-size:calc(28 * var(--u));letter-spacing:-.04em;color:#fff;cursor:pointer;
-  text-shadow:0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55);animation:bootPulse 2.4s ease-in-out infinite}
-.boot-press:focus-visible{outline:none;text-shadow:0 0 calc(10 * var(--u)) rgba(255,255,255,.7)}
-@keyframes bootPulse{50%{opacity:.45}}
+.boot-press{background:none;border:0;padding:calc(10 * var(--u)) calc(20 * var(--u));font-family:'Bank Gothic Bold',var(--head);font-size:calc(40.7 * var(--u));line-height:1;letter-spacing:-.07em;color:#fff;cursor:pointer;
+  text-shadow:calc(1.5 * var(--u)) calc(1.5 * var(--u)) calc(1 * var(--u)) rgba(0,0,0,.6);animation:bootPulse 2.4s ease-in-out infinite}
+.boot-press:focus-visible{outline:none}
+@keyframes bootPulse{50%{opacity:.75}}
 .boot-load{display:flex;flex-direction:column;align-items:center;gap:calc(8 * var(--u));font-family:var(--font);font-size:calc(19 * var(--u));color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .boot-bar{width:calc(300 * var(--u));height:calc(4 * var(--u));background:rgba(0,0,0,.25)}
 .boot-bar i{display:block;height:100%;width:0;background:#fff;box-shadow:0 0 calc(8 * var(--u)) rgba(255,255,255,.6);transition:width .2s linear}
@@ -411,7 +411,7 @@ const CONFIG = {
 
   // Preloader shown when the site opens. oncePerSession: skip it when the visitor comes back in the same visit.
   // pressStart: wait for "PRESS ANY KEY" (false = go straight in when loading finishes). minSeconds: shortest it shows.
-  preloader: { enabled: true, oncePerSession: true, pressStart: true, minSeconds: 2.2, press: 'Press Any Key', wordmark: 'SNIPING ZOO' },
+  preloader: { enabled: true, oncePerSession: true, pressStart: true, minSeconds: 2.2, press: 'Press ANY KEY', wordmark: 'SNIPING ZOO' },
 
   // Gamertag filter. 'anywhere' words are blocked even inside a longer tag; 'whole' words only on their own
   // (so "Assassin" is fine but "ass" isn't). Add your own words to either list.
@@ -461,7 +461,7 @@ function runPreloader(force) {
   document.documentElement.classList.add('booting');
   const bn = document.getElementById('bootName'); bn.textContent = P.wordmark || 'SNIPING ZOO'; bn.dataset.text = bn.textContent;
   const press = document.getElementById('bootPress'), load = document.getElementById('bootLoad'), fill = document.getElementById('bootFill');
-  press.textContent = P.press || 'Press Any Key';
+  press.textContent = P.press || 'Press ANY KEY';
   press.hidden = true; load.hidden = false; fill.style.width = '0';
   boot.classList.remove('out', 'in'); boot.hidden = false; bootWaiting = false;
   requestAnimationFrame(() => requestAnimationFrame(() => boot.classList.add('in')));
