@@ -151,8 +151,11 @@ html.booting .stage,html.booting .railbg{visibility:hidden}
 .boot.in .boot-lockup{opacity:1}
 /* glowing-tube wordmark: pale mint core, soft green bloom */
 .boot-word{position:relative;display:block;font-family:var(--head);font-size:calc(var(--cap) / .516);line-height:1;letter-spacing:.07em;margin-right:-.07em;white-space:nowrap;
-  color:#e9ffe1;-webkit-text-stroke:calc(1.2 * var(--u)) rgba(80,200,90,.55);paint-order:stroke fill;
-  text-shadow:0 0 calc(2 * var(--u)) rgba(210,255,200,.9),0 0 calc(6 * var(--u)) rgba(90,240,100,.9),0 0 calc(14 * var(--u)) rgba(50,210,70,.75),0 0 calc(28 * var(--u)) rgba(40,190,60,.45)}
+  color:transparent;-webkit-text-stroke:calc(.7 * var(--u)) rgba(90,220,100,.5);paint-order:stroke fill;
+  /* venetian-blind stripes through the letters: bright bands with the green glow showing between them */
+  background:repeating-linear-gradient(180deg,#f6fff2 0 calc(var(--cap) * .075),#c8f7c0 calc(var(--cap) * .085),rgba(110,225,115,.8) calc(var(--cap) * .095) calc(var(--cap) * .11));
+  -webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 0 calc(1.5 * var(--u)) rgba(200,255,190,.9)) drop-shadow(0 0 calc(5 * var(--u)) rgba(90,240,100,.95)) drop-shadow(0 0 calc(12 * var(--u)) rgba(50,210,70,.7))}
 .boot-word::after{content:attr(data-text);position:absolute;inset:0;z-index:-1;color:#5be86c;-webkit-text-stroke:0;text-shadow:none;transform:scaleX(1.06);filter:blur(calc(9 * var(--u)));opacity:.35}
 .boot-logo{position:absolute;right:calc(var(--cap) * -.35);top:50%;width:calc(var(--cap) * 6.2);height:calc(var(--cap) * 6.2);transform:translateY(-50%);z-index:-1;
   filter:drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.55))}
