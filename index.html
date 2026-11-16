@@ -12,9 +12,9 @@
    the selected screen's content top-right (party list style), button hints bottom-left.
    EDIT: colors live in :root, all text/links live in the CONFIG block in the <script> at the bottom. */
 :root{
-  --smoke-top:#6a6a67;
-  --smoke-mid:#4a4a48;
-  --smoke-low:#2b2b2a;
+  --smoke-top:#8b8b87;
+  --smoke-mid:#696965;
+  --smoke-low:#444441;
   --glow:#d9b21c;          /* warm glow bottom-left */
   --text:#f2f2ee;
   --text-dim:#c9c9c4;
@@ -810,7 +810,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let W, H;
 function size() { const s = .5; W = cv.width = Math.round(innerWidth * s); H = cv.height = Math.round(innerHeight * s); }
 size(); addEventListener('resize', size);
-const puffs = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), r: .12 + Math.random() * .3, vx: .00004 + Math.random() * .00012, vy: (Math.random() - .5) * .00004, a: .08 + Math.random() * .14, l: Math.random() < .6 ? 225 : 30 }));
+const puffs = Array.from({ length: 34 }, () => ({ x: Math.random(), y: Math.random(), r: .12 + Math.random() * .3, vx: .00004 + Math.random() * .00012, vy: (Math.random() - .5) * .00004, a: .08 + Math.random() * .14, l: Math.random() < .72 ? 232 : 70 }));
 function draw() {
   cx.clearRect(0, 0, W, H);
   for (const p of puffs) {
