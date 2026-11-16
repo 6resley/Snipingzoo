@@ -127,7 +127,7 @@ button.row.dl:hover,button.row.dl:focus-visible{background:rgba(160,160,155,.7)}
 .pstat{margin:0 0 calc(10 * var(--u));font-size:calc(19 * var(--u));text-align:right}
 .pstat b{color:var(--key);font-weight:400}
 .popmenu{margin-top:calc(6 * var(--u))}
-@media (max-width:760px){.popup{left:16px;right:16px;width:auto;top:30%}}
+@media (max-width:760px){.popback{position:fixed}.popup{--u:1px;left:16px;right:16px;width:auto;top:50%;transform:translateY(-50%);padding:12px 20px 10px}.poptitle{height:auto;line-height:1.25;font-size:19px;margin-bottom:6px}.poptext{font-size:15px;line-height:1.35}.popmenu li{height:40px}.popmenu button,.popmenu a{line-height:40px;font-size:19px}}
 .popmenu li{height:calc(30 * var(--u))}
 .popmenu button,.popmenu a{position:relative;display:block;width:100%;height:100%;text-align:right;padding:0 calc(8 * var(--u)) 0 0;font-size:calc(21 * var(--u));line-height:calc(30 * var(--u));color:var(--text);text-decoration:none;text-shadow:0 1px 2px rgba(0,0,0,.55)}
 .popmenu button::before,.popmenu a::before{content:"";position:absolute;inset:calc(2 * var(--u)) 0 calc(2 * var(--u)) 35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 70%,rgba(255,255,255,.3));opacity:0}
@@ -173,7 +173,7 @@ html.booting .stage,html.booting .railbg{visibility:hidden}
 .boot-load{display:flex;flex-direction:column;align-items:center;gap:calc(8 * var(--u));font-family:var(--font);font-size:calc(19 * var(--u));color:rgba(255,255,255,.75);text-shadow:0 1px 2px rgba(0,0,0,.5)}
 .boot-bar{width:calc(300 * var(--u));height:calc(4 * var(--u));background:rgba(0,0,0,.25)}
 .boot-bar i{display:block;height:100%;width:0;background:#fff;box-shadow:0 0 calc(8 * var(--u)) rgba(255,255,255,.6);transition:width .2s linear}
-@media (max-width:760px){.boot-lockup{--cap:calc(22 * var(--u))}}
+@media (max-width:760px){.boot{--u:calc(100vw / 640)}.boot-lockup{--cap:calc(26 * var(--u))}.boot-band{height:calc(190 * var(--u))}}
 @media (prefers-reduced-motion:reduce){.boot,.boot-lockup,.boot-bar i{transition:none}.boot-press{animation:none}}
 
 /* right content: party line + rows, top right */
@@ -212,15 +212,22 @@ input:focus{border-color:var(--key);outline:none}
   .rail{position:relative;width:auto;background:var(--rail);padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 18px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:flex-end}
   .rail > *{position:relative;right:auto;top:auto;transform:none}
   .brand{margin-bottom:8px}
-  .rail nav{width:100%;top:auto;right:auto}
+  .rail nav{width:100%;top:auto !important;right:auto}
+  .menu li{height:42px}
+  .menu button{line-height:42px;font-size:20px}
+  .menu li.sep{height:0}
   .badge{display:none}
   .status{margin-top:16px}
   .keys{display:none}
   .subtitle{white-space:normal;text-align:right;margin-bottom:10px}
-  .rail > .preview{position:relative;width:100%;height:200px;margin-top:16px}
+  .rail > .preview{position:relative;top:auto;width:100%;height:auto;aspect-ratio:16/9;max-width:100%;margin-top:16px}
   .bigcount{display:none}
   .panel{position:relative;left:auto;right:auto;top:auto;width:auto;max-height:none;padding:22px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));overflow:visible}
   .ver{position:relative;left:auto;right:auto;top:auto;display:block;text-align:right;padding:20px 16px 0}
+  .row,.rows.squad .row{height:36px;font-size:18px}
+  .rows{gap:5px}
+  .panel h1{font-size:19px;white-space:normal}
+  .subtitle{font-size:22px}
 }
 @media (prefers-reduced-motion:reduce){.menu button::before{transition:none}}
 </style>
