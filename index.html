@@ -325,7 +325,7 @@ const CONFIG = {
   rosterTitle: 'ROSTER',
   rosterSub: 'Finding players..',
   rosterColumn: '',
-  // 2026 roster (from the team Google Doc). role: 'Lead' = lead of that division.
+  // 2026 roster (from the team Google Doc). captain: true = team captain (gets the star). In a squad with captains, only captains get stars.
   // open: how many empty slots to show as "Searching.." rows. cap: squad size (shows x/cap and fills the rest with "Searching..").
   roster: [
     { group: 'OWNERS', card: 'OWNERS', cap: 2, players: [
@@ -337,8 +337,8 @@ const CONFIG = {
     { group: 'CO-LEADERS', card: 'CO-LEADERS', cap: 2, players: [
       { name: 'Zoo Dreamy', link: '#' } ] },
     { group: 'SNIPERS', card: 'SNIPERS', sepBefore: true, cap: 10, players: [
-      { name: 'Zoo Petroh', role: 'Lead', link: '#' },
-      { name: 'Zoo Krivzey', role: 'Lead', link: '#' },
+      { name: 'Zoo Petroh', captain: true, link: '#' },
+      { name: 'Zoo Krivzey', captain: true, link: '#' },
       { name: 'Zoo Auzy', link: '#' },
       { name: 'Zoo Graffix', link: '#' },
       { name: 'Zoo Revz', link: '#' },
@@ -346,9 +346,9 @@ const CONFIG = {
       { name: 'Zoo CTH', link: '#' },
       { name: 'Zoo 6IX', link: '#' } ] },
     { group: 'TRICKSHOTTERS', card: 'TRICKSHOTS', cap: 11, players: [
-      { name: 'Zoo Kiyuh', role: 'Lead', link: '#' },
-      { name: 'Zoo Visions', role: 'Lead', link: '#' },
-      { name: 'Zoo Jawa', role: 'Lead', link: '#' },
+      { name: 'Zoo Kiyuh', captain: true, link: '#' },
+      { name: 'Zoo Visions', captain: true, link: '#' },
+      { name: 'Zoo Jawa', captain: true, link: '#' },
       { name: 'Zoo Braidz', link: '#' },
       { name: 'Zoo Luzifer', link: '#' },
       { name: 'Zoo Floter', link: '#' },
@@ -649,11 +649,12 @@ const seriesOpen = o => { if (o.show === 'link' || o.show === 'latest') preview.
 
 /* --- Roster squads --- */
 function renderSquad(g) {
+  const hasCaps = g.players.some(p => p.captain);
   const n = g.players.length, name = titleCase(g.group), cnt = g.cap ? `${n}/${g.cap}` : `${n}`;
   setPreview(name, `${cnt} player${(g.cap || n) === 1 ? '' : 's'}`, '', g.thumb, g.card || g.group);
   panel.innerHTML = `<h1 class="two">${esc(g.heading || `${name}: ${cnt} player${(g.cap || n) === 1 ? '' : 's'}..`)}</h1>` +
     `<div class="h2">${esc(CONFIG.rosterSub || '')}</div><span class="colhead">${esc(CONFIG.rosterColumn || '')}</span>` +
-    `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${starIcon}<span class="num">${esc(p.rank ?? '')}</span></a></li>`).join('')}${Array.from({ length: g.cap ? Math.max(0, g.cap - n) : (g.open ?? (n ? 0 : 1)) }, () => `<li><div class="row searching"><span class="nm">Searching..</span>${starIcon}<span class="num"></span></div></li>`).join('')}</ul>`;
+    `<ul class="rows squad">${g.players.map((p, k) => `<li><a class="row${k === 0 ? ' on' : ''}" ${href(p.link)}><span class="nm">${esc(p.name)}${p.role ? ` <span class="sub">${esc(p.role)}</span>` : ''}</span>${!hasCaps || p.captain ? starIcon : '<span class="rk"></span>'}<span class="num">${esc(p.rank ?? '')}</span></a></li>`).join('')}${Array.from({ length: g.cap ? Math.max(0, g.cap - n) : (g.open ?? (n ? 0 : 1)) }, () => `<li><div class="row searching"><span class="nm">Searching..</span>${hasCaps ? '<span class="rk"></span>' : starIcon}<span class="num"></span></div></li>`).join('')}</ul>`;
   bigCount.textContent = g.cap ? `${n}/${g.cap} PLAYERS` : `${n}/${total} PLAYERS`;
   const rows = Array.from(panel.querySelectorAll('.rows.squad .row'));
   rows.forEach(r => { const on = () => rows.forEach(x => x.classList.toggle('on', x === r)); r.addEventListener('mouseenter', on); r.addEventListener('focus', on); });
